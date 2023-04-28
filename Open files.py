@@ -1,4 +1,26 @@
 # Databricks notebook source
+from os.path import abspath
+from pyspark.sql import SparkSession
+
+# spark session to warehouse
+warehouse_location = abspath('spark-warehouse')
+spark = SparkSession \
+    .builder \
+    .appName("SparkByExamples.com") \
+    .config("spark.sql.warehouse.dir", warehouse_location) \
+    .enableHiveSupport() \
+    .getOrCreate()
+
+# COMMAND ----------
+
+# Create Database
+spark.sql("CREATE DATABASE IF NOT EXISTS Datalake")
+
+# COMMAND ----------
+
+
+# create database
+
 
 
 # File location and type
@@ -47,42 +69,6 @@ for file_location, delimiter, name in zip(file_location_array, delimiter_array, 
     if name == "weather":
         new_column_name_list= [name.replace(',','') for name in df.columns]
         df = df.toDF(*new_column_name_list)
-    df.write.format("parquet").saveAsTable(name)
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC DROP TABLE IF EXISTS pop_commune;
-# MAGIC DROP TABLE IF EXISTS pop_department;
-# MAGIC DROP TABLE IF EXISTS construction_licence;
-# MAGIC DROP TABLE IF EXISTS pop_region;
-# MAGIC DROP TABLE IF EXISTS codebook;
-# MAGIC DROP TABLE IF EXISTS tremi;
-# MAGIC DROP TABLE IF EXISTS former_new_region;
-# MAGIC DROP TABLE IF EXISTS code_commune;
-# MAGIC DROP TABLE IF EXISTS elec;
-# MAGIC DROP TABLE IF EXISTS weather;
-# MAGIC DROP TABLE IF EXISTS dpe_france;
-# MAGIC DROP TABLE IF EXISTS development_licence;
-# MAGIC DROP TABLE IF EXISTS destruction_licence;
-
-# COMMAND ----------
-
-file_location = "/FileStore/tables/dpe_france.csv"
-file_type = "csv"
-infer_schema = "true"
-first_row_is_header = "true"
-delimiter = ","
-
-df = spark.read.format(file_type) \
-        .option("inferSchema", infer_schema) \
-        .option("header", first_row_is_header) \
-        .option("sep", delimiter) \
-        .load(file_location)
-display(df)
-
-
-
-# COMMAND ----------
-
-dbutils.fs.rm('/user/hive/warehouse/dpe_france/', True)
+    df.write.mode('overwrite')\
+        .format("parquet") \
+        .saveAsTable(f"Datalake.{name}")
