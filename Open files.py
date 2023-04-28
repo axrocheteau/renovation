@@ -35,7 +35,7 @@ name_array = ["pop_commune",
 # CSV options
 infer_schema = "true"
 first_row_is_header = "true"
-delimiter_array = [";", ";", ";", ";", "\t", ";", ";", ";", ";", ",", ";", ";", ";"]
+delimiter_array = [";", ";", ";", ";", "\t", ";", ";", ";", ";", ";", ",", ";", ";"]
 
 # The applied options are for CSV files. For other file types, these will be ignored.
 for file_location, delimiter, name in zip(file_location_array, delimiter_array, name_array):
@@ -44,21 +44,45 @@ for file_location, delimiter, name in zip(file_location_array, delimiter_array, 
         .option("header", first_row_is_header) \
         .option("sep", delimiter) \
         .load(file_location)
+    if name == "weather":
+        new_column_name_list= [name.replace(',','') for name in df.columns]
+        df = df.toDF(*new_column_name_list)
     df.write.format("parquet").saveAsTable(name)
 
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC DROP TABLE pop_commune;
-# MAGIC DROP TABLE pop_department;
-# MAGIC DROP TABLE construction_licence;
-# MAGIC DROP TABLE pop_region;
-# MAGIC DROP TABLE codebook;
-# MAGIC DROP TABLE tremi;
-# MAGIC DROP TABLE former_new_region;
-# MAGIC DROP TABLE code_commune;
-# MAGIC DROP TABLE elec;
-# MAGIC DROP TABLE weather;
-# MAGIC DROP TABLE dpe_france;
-# MAGIC DROP TABLE development_licence;
-# MAGIC DROP TABLE destruction_licence;
+# MAGIC DROP TABLE IF EXISTS pop_commune;
+# MAGIC DROP TABLE IF EXISTS pop_department;
+# MAGIC DROP TABLE IF EXISTS construction_licence;
+# MAGIC DROP TABLE IF EXISTS pop_region;
+# MAGIC DROP TABLE IF EXISTS codebook;
+# MAGIC DROP TABLE IF EXISTS tremi;
+# MAGIC DROP TABLE IF EXISTS former_new_region;
+# MAGIC DROP TABLE IF EXISTS code_commune;
+# MAGIC DROP TABLE IF EXISTS elec;
+# MAGIC DROP TABLE IF EXISTS weather;
+# MAGIC DROP TABLE IF EXISTS dpe_france;
+# MAGIC DROP TABLE IF EXISTS development_licence;
+# MAGIC DROP TABLE IF EXISTS destruction_licence;
+
+# COMMAND ----------
+
+file_location = "/FileStore/tables/dpe_france.csv"
+file_type = "csv"
+infer_schema = "true"
+first_row_is_header = "true"
+delimiter = ","
+
+df = spark.read.format(file_type) \
+        .option("inferSchema", infer_schema) \
+        .option("header", first_row_is_header) \
+        .option("sep", delimiter) \
+        .load(file_location)
+display(df)
+
+
+
+# COMMAND ----------
+
+dbutils.fs.rm('/user/hive/warehouse/dpe_france/', True)
