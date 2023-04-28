@@ -13,8 +13,11 @@ spark = SparkSession \
 
 # COMMAND ----------
 
-# Create Database
+# Create Database store raw files
 spark.sql("CREATE DATABASE IF NOT EXISTS Datalake")
+
+# Create Database store modified files
+spark.sql("CREATE DATABASE IF NOT EXISTS Gold")
 
 # COMMAND ----------
 
