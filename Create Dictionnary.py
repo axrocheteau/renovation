@@ -29,11 +29,14 @@ display(df)
 # unpivot the data to get all answers for every question
 unpivotExpr = "stack(24, '1', _1, '2', _2, '3', _3, '4', _4, '5', _5, '6', _6, '7', _7, '99', _99, '0', _0, '8', _8, '9', _9, '10', _10, '11', _11, '12', _12, '13', _13, '14', _14, '15', _15, '16', _16, '17', _17, '18', _18, '19', _19, '20', _20, '21', _21, '22', _22) AS (answer_number, answer)"
 all_answer_df = df.select("Name","VARNUM","LABEL", F.expr(unpivotExpr)).where("answer IS NOT NULL")
-count_df = all_answer_df.groupBy("VARNUM").count()
+count_df = all_answer_df.groupBy("VARNUM").count() # count number of possible answer to change multiplechoice question just for question with 3 answers : Yes, No ,NA
 display(all_answer_df)
 
 # COMMAND ----------
 
+# get multiple questions answers and questions 
+# template : question - answer 
+# possible answer : Yes, No, N
 mcq_df = df.select("VARNUM", 
                 F.regexp_extract(df.LABEL, ' - (.*)', 1).alias('answer_char'),
                 F.regexp_extract(df.LABEL, '(.*) - ', 1).alias('question_char'),
@@ -45,11 +48,12 @@ display(mcq_df)
 
 # COMMAND ----------
 
-df_final = all_answer_df.join(mcq_df, ["VARNUM"], 'inner')
-display(df_final)
+mcq_df = all_answer_df.join(mcq_df, ["VARNUM"], 'inner')
+display(mcq_df)
 
 # COMMAND ----------
 
+# replace question with 3 answers by only one 
 Dictionnary=df_final.withColumns({'final_answer': F.when((df_final['question_char'] != '') \
                                     & (df_final['question_char'] != 'Variable filtre') \
                                     & (df_final['question_char'] !='BLOCS Travaux') \
@@ -66,20 +70,23 @@ Dictionnary=df_final.withColumns({'final_answer': F.when((df_final['question_cha
                                     &  (df_final['count']<=3), df_final['answer_num'])\
                                 .otherwise(df_final['answer_number'])
 })
+# Drop merged columns
 Dictionnary = Dictionnary.drop('answer_char','answer','question_char','LABEL','answer_num','answer_number', 'count')
 Dictionnary = Dictionnary.drop_duplicates()
+# Rename to fit scheme
 Dictionnary = Dictionnary.withColumnRenamed('VARNUM', 'varnum')\
                             .withColumnRenamed('Name', 'column_name')\
                             .withColumnRenamed('final_answer', 'answer_char')\
                             .withColumnRenamed('final_question', 'question')\
                             .withColumnRenamed('final_answer_number', 'answer_number')
-
+# id
 Dictionnary = Dictionnary.withColumn("id_answer",F.monotonically_increasing_id())
 
     
 
 # COMMAND ----------
 
+# save as table
 Dictionnary.write.mode('overwrite')\
         .format("parquet") \
         .saveAsTable("Gold.Dictionnary")
