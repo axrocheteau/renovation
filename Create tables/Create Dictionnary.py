@@ -1,4 +1,9 @@
 # Databricks notebook source
+# MAGIC %md
+# MAGIC # Create Dictionnary
+
+# COMMAND ----------
+
 from os.path import abspath
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
@@ -12,11 +17,6 @@ spark = SparkSession \
     .config("spark.sql.warehouse.dir", warehouse_location) \
     .enableHiveSupport() \
     .getOrCreate()
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC # Dictionnary
 
 # COMMAND ----------
 
