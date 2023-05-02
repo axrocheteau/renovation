@@ -74,3 +74,28 @@ for file_location, delimiter, name in zip(file_location_array, delimiter_array, 
     df.write.mode('overwrite')\
         .format("parquet") \
         .saveAsTable(f"Datalake.{name}")
+
+# COMMAND ----------
+
+# to recreate only one specific table
+file_location = "/FileStore/tables/dep_limitrophe.csv"
+file_type = "csv"
+name = "neighbouring_dep"
+
+# CSV options
+infer_schema = "true"
+first_row_is_header = "true"
+delimiter = ";"
+
+# The applied options are for CSV files. For other file types, these will be ignored.
+df = spark.read.format(file_type) \
+    .option("inferSchema", infer_schema) \
+    .option("header", first_row_is_header) \
+    .option("sep", delimiter) \
+    .load(file_location)
+if name == "weather":
+    new_column_name_list= [name.replace(',','') for name in df.columns]
+    df = df.toDF(*new_column_name_list)
+df.write.mode('overwrite')\
+    .format("parquet") \
+    .saveAsTable(f"Datalake.{name}")
