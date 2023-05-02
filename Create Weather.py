@@ -16,5 +16,39 @@ spark = SparkSession \
 # COMMAND ----------
 
 # load df
-df = spark.sql("SELECT * FROM datalake.codebook")
+df = spark.sql("SELECT * FROM datalake.weather")
 display(df)
+
+# COMMAND ----------
+
+weather = df.select(F.col("Direction du vent moyen 10 mn").alias('wind_direction'), \
+                    F.col("Vitesse du vent moyen 10 mn").alias('wind_speed'), \
+                    F.col("Température").alias('temp_kelvin'), \
+                    F.col("Humidité").alias('humidity'), \
+                    F.col("Hauteur de la base des nuages de l'étage inférieur").alias('heigh_clouds'), \
+                    F.col("Température (°C)").alias('temp_degree'), \
+                    F.col("Altitude").alias('altitude'), \
+                    F.col("department (code)").alias('department_number'), \
+                    F.col("mois_de_l_annee").alias('month'), \
+                    F.year("Date").alias('year')
+)
+weather = weather.groupBy('month', 'year', 'department_number').avg()
+weather = weather.select('month',
+                'year',
+                'department_number',
+                F.col('avg(wind_direction)').alias('wind_direction'),
+                F.col('avg(wind_speed)').alias('wind_speed'),
+                F.col('avg(temp_kelvin)').alias('temp_kelvin'),
+                F.col('avg(humidity)').alias('humidity'),
+                F.col('avg(heigh_clouds)').alias('heigh_clouds'),
+                F.col('avg(temp_degree)').alias('temp_degree'),
+                F.col('avg(altitude)').alias('altitude')
+)
+display(weather)
+
+
+
+# COMMAND ----------
+
+neigh = spark.sql("SELECT * FROM datalake.neighbouring_dep")
+display(neigh)
