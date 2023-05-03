@@ -38,7 +38,7 @@ pop_region = spark.sql("SELECT * FROM datalake.pop_region")
 
 # COMMAND ----------
 
-display(dpe_france)
+display(construction_licence)
 
 # COMMAND ----------
 
@@ -50,23 +50,67 @@ df_commune = (
     )
     .join(
         dpe_france.filter(
-                F.col('date_etablissement_dpe').between(F.lit("2014-01-01"), F.lit("2017-01-01")) &
-                F.col('classe_consommation_energie') != 'N' &
-                F.col('classe_estimation_ges') != 'N' 
+                (F.col('date_etablissement_dpe').between(F.lit("2014-01-01"), F.lit("2017-01-01"))) &
+                (F.col('classe_consommation_energie') != 'N') &
+                (F.col('classe_estimation_ges') != 'N') 
             )
             .select(
-                F.col('classe_consommation_energie')
-                    .when() # transform letter in digits to do avg
+                F.when(F.col('classe_consommation_energie') == 'A', 1.0)
+                    .when(F.col('classe_consommation_energie') == 'B', 2.0)
+                    .when(F.col('classe_consommation_energie') == 'C', 3.0)
+                    .when(F.col('classe_consommation_energie') == 'D', 4.0)
+                    .when(F.col('classe_consommation_energie') == 'E', 5.0)
+                    .when(F.col('classe_consommation_energie') == 'F', 6.0)
+                    .when(F.col('classe_consommation_energie') == 'G', 7.0)
+                    .otherwise(0.0)
                     .alias('dpe'),
-                F.col('classe_estimation_ges').alias('ges'),
+                F.when(F.col('classe_estimation_ges') == 'A', 1.0)
+                    .when(F.col('classe_estimation_ges') == 'B', 2.0)
+                    .when(F.col('classe_estimation_ges') == 'C', 3.0)
+                    .when(F.col('classe_estimation_ges') == 'D', 4.0)
+                    .when(F.col('classe_estimation_ges') == 'E', 5.0)
+                    .when(F.col('classe_estimation_ges') == 'F', 6.0)
+                    .when(F.col('classe_estimation_ges') == 'G', 7.0)
+                    .otherwise(0.0)
+                    .alias('ges'),
                 F.col('code_insee_commune_actualise').alias('code_insee'),
             )
-            .groupBy('code_insee').agg(F.abg('Age'), F.count('Age'))
-            select(),
+            .groupBy('code_insee').agg(F.avg('dpe'), F.avg('ges'), F.count('code_insee'))
+            .select(
+                F.col('code_insee'),
+                F.round(F.col('avg(dpe)'),2).alias('avg_dpe'),
+                F.round(F.col('avg(ges)'),2).alias('avg_ges'),
+                F.col('count(code_insee)').alias('n_dpe')
+            ),
         ['code_insee'],
+        'left_outer'
+    )
+    .join(
+        elec.filter(
+                (F.col('Année').between(2014, 2016)) &
+                (F.col('Filière') == 'Electricité')
+            )
+            .select(
+                (F.col('Consommation Résidentiel  (MWh)') / F.col('Nombre de points Résidentiel')).alias('consumption_by_residence'),
+                F.col('Code Commune').alias('code_insee')
+            )
+            .where('consumption_by_residence IS NOT NULL')
+            .groupBy('code_insee').agg(F.round(F.avg('consumption_by_residence'),2).alias('consumption_by_residence')),
+        ['code_insee'],
+        'left_outer'
+    )
+    .join(
+        
     )
 )
 display(df_commune)
+
+# COMMAND ----------
+
+printit = (
+)
+
+display(printit)
 
 # COMMAND ----------
 
