@@ -38,7 +38,32 @@ pop_region = spark.sql("SELECT * FROM datalake.pop_region")
 
 # COMMAND ----------
 
-display(construction_licence)
+regions = (
+    development_licence.select(
+        F.col('REG').alias('former_region_number'),
+        F.col('DEP').alias('department_number')
+    )
+    .dropDuplicates()
+    .join(
+        pop_department.select(
+                F.col('CODDEP').alias('department_number'),
+                F.col('DEP').alias('department_name')
+            ),
+        ['department_number'],
+        'inner'
+    )
+    .join(
+        former_new_region.select(
+                F.col('Nouveau Code').alias('new_region_number'),
+                F.col('Nouveau Nom').alias('new_region_name'),
+                F.col('Anciens Code').alias('former_region_number'),
+                F.col('Anciens Nom').alias('former_region_name')
+            ),
+        ['former_region_number'],
+        'inner'
+    )
+    .dropDuplicates()
+)
 
 # COMMAND ----------
 
@@ -73,7 +98,7 @@ df_commune = (
                     .when(F.col('classe_estimation_ges') == 'G', 7.0)
                     .otherwise(0.0)
                     .alias('ges'),
-                F.col('code_insee_commune_actualise').alias('code_insee'),
+                F.col('code_insee_commune_actualise').alias('code_insee')
             )
             .groupBy('code_insee').agg(F.avg('dpe'), F.avg('ges'), F.count('code_insee'))
             .select(
@@ -100,21 +125,91 @@ df_commune = (
         'left_outer'
     )
     .join(
-        
+        code_commune.select(
+            F.col('Code_commune_INSEE').alias('code_insee'),
+            F.when(F.col('Code_postal') < 10000, F.concat(F.lit("0"), F.col('Code_postal').cast('string')))
+                .otherwise(F.col('Code_postal').cast('string'))
+                .alias('cd_postal')
+            ),
+        ['code_insee'],
+        'left_outer'
     )
+    .join(
+        construction_licence.filter(
+                F.col('DATE_REELLE_AUTORISATION').between(F.lit("2014-01-01"), F.lit("2017-01-01"))
+            )
+            .select(
+                F.col('NB_LGT_TOT_CREES').alias('nb_housing'),
+                F.col('COMM').alias('code_insee')
+            )
+            .groupBy('code_insee').agg(F.sum('nb_housing').alias('n_construction_licence')),
+        ['code_insee'],
+        'left_outer'
+    )
+    .join(
+        destruction_licence.filter(
+                F.col('DATE_REELLE_AUTORISATION').between(F.lit("2014-01-01"), F.lit("2017-01-01"))
+            )
+            .select(
+                F.col('COMM').alias('code_insee')
+            )
+            .groupBy('code_insee').agg(F.count('code_insee').alias('n_destruction_licence')),
+        ['code_insee'],
+        'left_outer'
+    )
+    .join(
+        development_licence.filter(
+                F.col('DATE_REELLE_AUTORISATION').between(F.lit("2014-01-01"), F.lit("2017-01-01"))
+            )
+            .select(
+                F.col('COMM').alias('code_insee')
+            )
+            .groupBy('code_insee').agg(F.count('code_insee').alias('n_development_licence')),
+        ['code_insee'],
+        'left_outer'
+    )
+    .join(
+        regions,
+        ['department_number'],
+        'inner'
+    )
+    .withColumns({
+        'n_development_licence': F.when(F.col('n_development_licence').isNull(), 0).otherwise(F.col('n_development_licence')),
+        'n_destruction_licence': F.when(F.col('n_destruction_licence').isNull(), 0).otherwise(F.col('n_destruction_licence')),
+        'n_construction_licence': F.when(F.col('n_construction_licence').isNull(), 0).otherwise(F.col('n_construction_licence')),
+        'n_dpe': F.when(F.col('n_dpe').isNull(), 0).otherwise(F.col('n_dpe')),
+        "id_commune": F.monotonically_increasing_id()
+    })
+)
+
+# COMMAND ----------
+
+# reorder columns
+df_commune = df_commune.select(
+    'id_commune',
+    'cd_postal',
+    'code_insee',
+    'commune_name',
+    'department_number',
+    'department_name',
+    'former_region_name',
+    'former_region_number',
+    'new_region_name',
+    'new_region_number',
+    'population',
+    'n_development_licence',
+    'n_construction_licence',
+    'n_destruction_licence',
+    'n_dpe',
+    'avg_dpe',
+    'avg_ges',
+    'consumption_by_residence'
 )
 display(df_commune)
 
 # COMMAND ----------
 
-printit = (
-)
-
-display(printit)
-
-# COMMAND ----------
-
 # save as table
-Dictionnary.write.mode('overwrite')\
+df_commune.write.mode('overwrite')\
         .format("parquet") \
-        .saveAsTable("Gold.Dictionnary")
+        .saveAsTable("Gold.Commune")

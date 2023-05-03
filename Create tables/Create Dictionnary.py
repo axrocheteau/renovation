@@ -37,50 +37,48 @@ display(all_answer_df)
 # get multiple questions answers and questions 
 # template : question - answer 
 # possible answer : Yes, No, N
-mcq_df = df.select("VARNUM", 
+df_final = (df.select("VARNUM", 
                 F.regexp_extract(df.LABEL, ' - (.*)', 1).alias('answer_char'),
                 F.regexp_extract(df.LABEL, '(.*) - ', 1).alias('question_char'),
                 F.reverse(F.split(F.reverse(df.NAME),'_').getItem(0)).alias('answer_num')
-)         
-mcq_df = mcq_df.join(count_df, ["VARNUM"], 'inner') \
-        .orderBy('VARNUM')
-display(mcq_df)
-
-# COMMAND ----------
-
-mcq_df = all_answer_df.join(mcq_df, ["VARNUM"], 'inner')
-display(mcq_df)
+    )         
+    .join(count_df, ["VARNUM"], 'inner')
+    .join(all_answer_df, ["VARNUM"], 'inner')
+)
 
 # COMMAND ----------
 
 # replace question with 3 answers by only one 
-Dictionnary=df_final.withColumns({'final_answer': F.when((df_final['question_char'] != '') \
-                                    & (df_final['question_char'] != 'Variable filtre') \
-                                    & (df_final['question_char'] !='BLOCS Travaux') \
-                                    & (df_final['count']<=3), df_final['answer_char'])\
-                                .otherwise(df_final['answer']),
-                            'final_question': F.when((df_final['question_char'] != '') \
-                                    & (df_final['question_char'] != 'Variable filtre') \
-                                    & (df_final['question_char'] !='BLOCS Travaux') \
-                                    &  (df_final['count']<=3), df_final['question_char'])\
-                                .otherwise(df_final['LABEL']),
-                            'final_answer_number': F.when((df_final['question_char'] != '') \
-                                    & (df_final['question_char'] != 'Variable filtre') \
-                                    & (df_final['question_char'] !='BLOCS Travaux') \
-                                    &  (df_final['count']<=3), df_final['answer_num'])\
-                                .otherwise(df_final['answer_number'])
-})
-# Drop merged columns
-Dictionnary = Dictionnary.drop('answer_char','answer','question_char','LABEL','answer_num','answer_number', 'count')
-Dictionnary = Dictionnary.drop_duplicates()
-# Rename to fit scheme
-Dictionnary = Dictionnary.withColumnRenamed('VARNUM', 'varnum')\
-                            .withColumnRenamed('Name', 'column_name')\
-                            .withColumnRenamed('final_answer', 'answer_char')\
-                            .withColumnRenamed('final_question', 'question')\
-                            .withColumnRenamed('final_answer_number', 'answer_number')
-# id
-Dictionnary = Dictionnary.withColumn("id_answer",F.monotonically_increasing_id())
+Dictionnary = (
+    df_final.withColumns(
+        {'final_answer': F.when((df_final['question_char'] != '') \
+                & (df_final['question_char'] != 'Variable filtre') \
+                & (df_final['question_char'] !='BLOCS Travaux') \
+                & (df_final['count']<=3), df_final['answer_char'])\
+            .otherwise(df_final['answer']),
+        'final_question': F.when((df_final['question_char'] != '') \
+                & (df_final['question_char'] != 'Variable filtre') \
+                & (df_final['question_char'] !='BLOCS Travaux') \
+                &  (df_final['count']<=3), df_final['question_char'])\
+            .otherwise(df_final['LABEL']),
+        'final_answer_number': F.when((df_final['question_char'] != '') \
+                & (df_final['question_char'] != 'Variable filtre') \
+                & (df_final['question_char'] !='BLOCS Travaux') \
+                &  (df_final['count']<=3), df_final['answer_num'])\
+            .otherwise(df_final['answer_number'])
+        })
+    # Drop merged columns
+    .drop('answer_char','answer','question_char','LABEL','answer_num','answer_number', 'count')
+    .drop_duplicates()
+    # Rename to fit scheme
+    .withColumnRenamed('VARNUM', 'varnum') 
+    .withColumnRenamed('Name', 'column_name')
+    .withColumnRenamed('final_answer', 'answer_char')
+    .withColumnRenamed('final_question', 'question')
+    .withColumnRenamed('final_answer_number', 'answer_number')
+    # id
+    .withColumn("id_answer",F.monotonically_increasing_id()) 
+)
 
     
 
