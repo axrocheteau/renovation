@@ -70,14 +70,15 @@ Dictionnary = (
     # Drop merged columns
     .drop('answer_char','answer','question_char','LABEL','answer_num','answer_number', 'count')
     .drop_duplicates()
-    # Rename to fit scheme
-    .withColumnRenamed('VARNUM', 'varnum') 
-    .withColumnRenamed('Name', 'column_name')
-    .withColumnRenamed('final_answer', 'answer_char')
-    .withColumnRenamed('final_question', 'question')
-    .withColumnRenamed('final_answer_number', 'answer_number')
-    # id
-    .withColumn("id_answer",F.monotonically_increasing_id()) 
+    # Rename to fit scheme and order and add id
+    .select(
+        F.monotonically_increasing_id().alias('id_answer'),
+        F.col('Name').alias('column_name'),
+        F.col('VARNUM').alias('varnum'),
+        F.col('final_answer').alias('answer_char'),
+        F.col('final_answer_number').alias('answer_number'),
+        F.col('final_question').alias('question')
+    )
 )
 
     

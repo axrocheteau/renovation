@@ -26,20 +26,20 @@ display(df)
 
 # COMMAND ----------
 
-weather = df.select(F.col("Direction du vent moyen 10 mn").alias('wind_direction'), \
-                    F.col("Vitesse du vent moyen 10 mn").alias('wind_speed'), \
-                    F.col("Température").alias('temp_kelvin'), \
-                    F.col("Humidité").alias('humidity'), \
-                    F.col("Hauteur de la base des nuages de l'étage inférieur").alias('heigh_clouds'), \
-                    F.col("Température (°C)").alias('temp_degree'), \
-                    F.col("Altitude").alias('altitude'), \
-                    F.col("department (code)").alias('department_number'), \
-                    F.col("mois_de_l_annee").alias('month'), \
-                    F.year("Date").alias('year')) \
-    .groupBy('month', 'year', 'department_number').avg() \
-    .select('month',
+weather = (df.select(F.col("Direction du vent moyen 10 mn").alias('wind_direction'),
+                    F.col("Vitesse du vent moyen 10 mn").alias('wind_speed'),
+                    F.col("Température").alias('temp_kelvin'),
+                    F.col("Humidité").alias('humidity'),
+                    F.col("Hauteur de la base des nuages de l'étage inférieur").alias('heigh_clouds'),
+                    F.col("Température (°C)").alias('temp_degree'),
+                    F.col("Altitude").alias('altitude'),
+                    F.col("department (code)").alias('department_number'),
+                    F.col("mois_de_l_annee").alias('month'),
+                    F.year("Date").alias('year'))
+    .groupBy('month', 'year', 'department_number').avg()
+    .select('department_number',
             'year',
-            'department_number',
+            'month',
             F.col('avg(wind_direction)').alias('wind_direction'),
             F.col('avg(wind_speed)').alias('wind_speed'),
             F.col('avg(temp_kelvin)').alias('temp_kelvin'),
@@ -47,6 +47,7 @@ weather = df.select(F.col("Direction du vent moyen 10 mn").alias('wind_direction
             F.col('avg(heigh_clouds)').alias('heigh_clouds'),
             F.col('avg(temp_degree)').alias('temp_degree'),
             F.col('avg(altitude)').alias('altitude')
+    )
 )
 display(weather)
 
@@ -70,9 +71,9 @@ all_possible_not_dep = not_dep.join(dates) # get all neighbors for every date po
 full_weather = (all_possible_not_dep.withColumnRenamed('neigh', 'department_number') # to join on neighbors easier this way
     .join(weather, ['department_number', 'month', 'year']) # get existing values for neighbors for every date
     .groupBy('Departement', 'month', 'year').avg() # get average for every date and neighbor
-    .select('month',
+    .select(F.col('Departement').alias('department_number'),
             'year',
-            F.col('Departement').alias('department_number'),
+            'month',
             F.col('avg(wind_direction)').alias('wind_direction'),
             F.col('avg(wind_speed)').alias('wind_speed'),
             F.col('avg(temp_kelvin)').alias('temp_kelvin'),
