@@ -35,8 +35,12 @@ display(all_answer_df)
 # COMMAND ----------
 
 # join with dictionnary to do an association table
-answer = all_answer_df.join(Dictionnary, ['column_name'], 'inner')\
+answer = (
+    all_answer_df.join(
+        Dictionnary, ['column_name'], 'inner'
+    )
     .select('id_owner', 'id_answer')
+)
 display(answer)
 
 

@@ -36,10 +36,12 @@ display(all_answer_df)
 # get multiple questions answers and questions 
 # template : question - answer 
 # possible answer : Yes, No, N
-df_final = (df.select("VARNUM", 
-                F.regexp_extract(df.LABEL, ' - (.*)', 1).alias('answer_char'),
-                F.regexp_extract(df.LABEL, '(.*) - ', 1).alias('question_char'),
-                F.reverse(F.split(F.reverse(df.NAME),'_').getItem(0)).alias('answer_num')
+df_final = (
+    df.select(
+        "VARNUM", 
+        F.regexp_extract(df.LABEL, ' - (.*)', 1).alias('answer_char'),
+        F.regexp_extract(df.LABEL, '(.*) - ', 1).alias('question_char'),
+        F.reverse(F.split(F.reverse(df.NAME),'_').getItem(0)).alias('answer_num')
     )         
     .join(count_df, ["VARNUM"], 'inner')
     .join(all_answer_df, ["VARNUM"], 'inner')
@@ -65,7 +67,8 @@ Dictionnary = (
                 & (df_final['question_char'] !='BLOCS Travaux') \
                 &  (df_final['count']<=3), df_final['answer_num'])\
             .otherwise(df_final['answer_number'])
-        })
+        }
+    )
     # Drop merged columns
     .drop('answer_char','answer','question_char','LABEL','answer_num','answer_number', 'count')
     .drop_duplicates()

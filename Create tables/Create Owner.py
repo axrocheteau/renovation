@@ -26,7 +26,8 @@ display(tremi)
 
 # COMMAND ----------
 
-owner = (tremi.select(
+owner = (
+    tremi.select(
         F.col('Respondent_Serial').alias('id_owner'),
         F.col('main_rs1').alias('gender'),
         F.col('main_rs2_c').alias('age'),
@@ -45,7 +46,6 @@ owner = (tremi.select(
     .dropDuplicates()
 )
 display(owner)
-print(owner.count())
 
 # COMMAND ----------
 

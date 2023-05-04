@@ -25,7 +25,8 @@ display(tremi)
 
 # COMMAND ----------
 
-housing = (tremi.select(   
+housing = (
+    tremi.select(   
         F.col('Respondent_Serial').alias('id_owner'),
         F.when(F.col('cd_postal') < 10000, F.concat(F.lit("0"), F.col('cd_postal').cast('string')))
             .otherwise(F.col('cd_postal').cast('string'))
