@@ -7,7 +7,6 @@
 from os.path import abspath
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
-from pyspark.pandas import DataFrame as D
 
 # spark session to warehouse
 warehouse_location = abspath('spark-warehouse')
