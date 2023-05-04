@@ -38,14 +38,15 @@ pop_region = spark.sql("SELECT * FROM datalake.pop_region")
 
 # COMMAND ----------
 
+# table all regions and dep (to not do nested join)
 regions = (
-    development_licence.select(
+    development_licence.select( #table that link region and dep number
         F.col('REG').alias('former_region_number'),
         F.col('DEP').alias('department_number')
     )
-    .dropDuplicates()
+    .dropDuplicates() # to reduce number of value drastically
     .join(
-        pop_department.select(
+        pop_department.select( # to get department name
                 F.col('CODDEP').alias('department_number'),
                 F.col('DEP').alias('department_name')
             ),
@@ -53,7 +54,7 @@ regions = (
         'inner'
     )
     .join(
-        former_new_region.select(
+        former_new_region.select( # to get all region info
                 F.col('Nouveau Code').alias('new_region_number'),
                 F.col('Nouveau Nom').alias('new_region_name'),
                 F.col('Anciens Code').alias('former_region_number'),
@@ -68,18 +69,19 @@ regions = (
 # COMMAND ----------
 
 df_commune = (
-    pop_commune.select(F.col('DEPCOM').alias('code_insee'),
-                        F.col('COM').alias('commune_name'),
-                        F.col('PMUN').alias('population'),
-                        F.col('DEPCOM').substr(0,2).alias('department_number')
+    pop_commune.select( # populations info
+        F.col('DEPCOM').alias('code_insee'),
+        F.col('COM').alias('commune_name'),
+        F.col('PMUN').alias('population'),
+        F.col('DEPCOM').substr(0,2).alias('department_number')
     )
-    .join(
-        dpe_france.filter(
+    .join( # dpe and ges info
+        dpe_france.filter( # only take dpe between 2014 and 2016, ges and dpe that are relevant  
                 (F.col('date_etablissement_dpe').between(F.lit("2014-01-01"), F.lit("2017-01-01"))) &
                 (F.col('classe_consommation_energie') != 'N') &
-                (F.col('classe_estimation_ges') != 'N') 
+                (F.col('classe_estimation_ges') != 'N') # N is not a valid dpe or ges
             )
-            .select(
+            .select( # put ges and dpe as float to average them
                 F.when(F.col('classe_consommation_energie') == 'A', 1.0)
                     .when(F.col('classe_consommation_energie') == 'B', 2.0)
                     .when(F.col('classe_consommation_energie') == 'C', 3.0)
@@ -110,8 +112,8 @@ df_commune = (
         ['code_insee'],
         'left_outer'
     )
-    .join(
-        elec.filter(
+    .join( # elec consumption info
+        elec.filter( # only take electricity conumption between 2014 and 2016
                 (F.col('Année').between(2014, 2016)) &
                 (F.col('Filière') == 'Electricité')
             )
@@ -124,9 +126,10 @@ df_commune = (
         ['code_insee'],
         'left_outer'
     )
-    .join(
+    .join( # get postal codes
         code_commune.select(
             F.col('Code_commune_INSEE').alias('code_insee'),
+            # correct postal codes interpreted as int
             F.when(F.col('Code_postal') < 10000, F.concat(F.lit("0"), F.col('Code_postal').cast('string')))
                 .otherwise(F.col('Code_postal').cast('string'))
                 .alias('cd_postal')
@@ -134,7 +137,7 @@ df_commune = (
         ['code_insee'],
         'left_outer'
     )
-    .join(
+    .join( # get construction licence
         construction_licence.filter(
                 F.col('DATE_REELLE_AUTORISATION').between(F.lit("2014-01-01"), F.lit("2017-01-01"))
             )
@@ -146,7 +149,7 @@ df_commune = (
         ['code_insee'],
         'left_outer'
     )
-    .join(
+    .join( # get destruction licence
         destruction_licence.filter(
                 F.col('DATE_REELLE_AUTORISATION').between(F.lit("2014-01-01"), F.lit("2017-01-01"))
             )
@@ -157,7 +160,7 @@ df_commune = (
         ['code_insee'],
         'left_outer'
     )
-    .join(
+    .join( # get development licence
         development_licence.filter(
                 F.col('DATE_REELLE_AUTORISATION').between(F.lit("2014-01-01"), F.lit("2017-01-01"))
             )
@@ -168,16 +171,17 @@ df_commune = (
         ['code_insee'],
         'left_outer'
     )
-    .join(
+    .join( # get regions info and dep name
         regions,
         ['department_number'],
         'inner'
     )
-    .withColumns({
+    .withColumns({ # put null values to 0 to make sense
         'n_development_licence': F.when(F.col('n_development_licence').isNull(), 0).otherwise(F.col('n_development_licence')),
         'n_destruction_licence': F.when(F.col('n_destruction_licence').isNull(), 0).otherwise(F.col('n_destruction_licence')),
         'n_construction_licence': F.when(F.col('n_construction_licence').isNull(), 0).otherwise(F.col('n_construction_licence')),
         'n_dpe': F.when(F.col('n_dpe').isNull(), 0).otherwise(F.col('n_dpe')),
+        # add an id for every town
         "id_commune": F.monotonically_increasing_id()
     })
 )
