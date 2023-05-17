@@ -51,39 +51,47 @@ df_final = (
 
 # replace question with 3 answers by only one 
 Dictionnary = (
-    df_final.withColumns(
-        {'final_answer': F.when((df_final['question_char'] != '') \
-                & (df_final['question_char'] != 'Variable filtre') \
-                & (df_final['question_char'] !='BLOCS Travaux') \
-                & (df_final['count']<=3), df_final['answer_char'])\
-            .otherwise(df_final['answer']),
-        'final_question': F.when((df_final['question_char'] != '') \
-                & (df_final['question_char'] != 'Variable filtre') \
-                & (df_final['question_char'] !='BLOCS Travaux') \
-                &  (df_final['count']<=3), df_final['question_char'])\
-            .otherwise(df_final['LABEL']),
-        'final_answer_number': F.when((df_final['question_char'] != '') \
-                & (df_final['question_char'] != 'Variable filtre') \
-                & (df_final['question_char'] !='BLOCS Travaux') \
-                &  (df_final['count']<=3), df_final['answer_num'])\
+    df_final.select(
+        F.col('Name').alias('column_name'),
+        F.col('VARNUM').alias('varnum'),
+        (
+            F.when(
+                (df_final['question_char'] != '')
+                & (df_final['question_char'] != 'Variable filtre')
+                & (df_final['question_char'] !='BLOCS Travaux')
+                & (df_final['count']<=3), df_final['answer_char']
+            )
+            .otherwise(df_final['answer'])
+        )
+        .alias("answer_char"),
+        (
+            F.when(
+                (df_final['question_char'] != '')
+                & (df_final['question_char'] != 'Variable filtre')
+                & (df_final['question_char'] !='BLOCS Travaux')
+                &  (df_final['count']<=3), df_final['answer_num']
+            )
             .otherwise(df_final['answer_number'])
-        }
+        )
+        .alias("answer_number"),
+        (
+            F.when(
+                (df_final['question_char'] != '')
+                & (df_final['question_char'] != 'Variable filtre')
+                & (df_final['question_char'] !='BLOCS Travaux')
+                &  (df_final['count']<=3), df_final['question_char']
+            )
+            .otherwise(df_final['LABEL'])
+        )
+        .alias("question")
     )
-    # Drop merged columns
-    .drop('answer_char','answer','question_char','LABEL','answer_num','answer_number', 'count')
     .drop_duplicates()
     # Rename to fit scheme and order and add id
     .select(
         F.monotonically_increasing_id().alias('id_answer'),
-        F.col('Name').alias('column_name'),
-        F.col('VARNUM').alias('varnum'),
-        F.col('final_answer').alias('answer_char'),
-        F.col('final_answer_number').alias('answer_number'),
-        F.col('final_question').alias('question')
+        "*"
     )
 )
-
-    
 
 # COMMAND ----------
 

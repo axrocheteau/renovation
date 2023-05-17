@@ -43,13 +43,13 @@ weather = (
         'department_number',
         'year',
         'month',
-        F.col('avg(wind_direction)').alias('wind_direction'),
-        F.col('avg(wind_speed)').alias('wind_speed'),
-        F.col('avg(temp_kelvin)').alias('temp_kelvin'),
-        F.col('avg(humidity)').alias('humidity'),
-        F.col('avg(heigh_clouds)').alias('heigh_clouds'),
-        F.col('avg(temp_degree)').alias('temp_degree'),
-        F.col('avg(altitude)').alias('altitude')
+        F.round(F.col('avg(wind_direction)'),2).alias('wind_direction'),
+        F.round(F.col('avg(wind_speed)'),2).alias('wind_speed'),
+        F.round(F.col('avg(temp_kelvin)'),2).alias('temp_kelvin'),
+        F.round(F.col('avg(humidity)'),2).alias('humidity'),
+        F.round(F.col('avg(heigh_clouds)'),2).alias('heigh_clouds'),
+        F.round(F.col('avg(temp_degree)'),2).alias('temp_degree'),
+        F.round(F.col('avg(altitude)'),2).alias('altitude')
     )
 )
 display(weather)
@@ -68,24 +68,34 @@ unpivotExpr = "stack(8, Voisin_1, Voisin_2, Voisin_3, Voisin_4, Voisin_5, Voisin
 neigh = neigh.select("Departement", F.expr(unpivotExpr)).where("neigh IS NOT NULL")
 
 # get all departments that are not present in weather dataset
-not_dep = neigh.join(weather.select('department_number').dropDuplicates(), neigh.Departement == weather.department_number ,'left_anti')
-dates = weather.select('year', 'month').dropDuplicates()
-all_possible_not_dep = not_dep.join(dates) # get all neighbors for every date possible
+all_possible_not_dep = (
+    neigh.join(
+        weather.select('year', 'month').dropDuplicates()
+    )
+    .withColumnRenamed("Departement", "department_number")
+    .join(
+        weather.select('department_number', 'year', 'month').dropDuplicates(),
+        ['department_number', 'month', 'year'],
+        'left_anti'
+    )
+)
 
-full_weather = (all_possible_not_dep.withColumnRenamed('neigh', 'department_number') # to join on neighbors easier this way
+full_weather = (
+    all_possible_not_dep.withColumnRenamed('department_number', 'Departement') 
+    .withColumnRenamed('neigh', 'department_number') # to join on neighbors easier this way
     .join(weather, ['department_number', 'month', 'year']) # get existing values for neighbors for every date
     .groupBy('Departement', 'month', 'year').avg() # get average for every date and neighbor
     .select(
         F.col('Departement').alias('department_number'),
         'year',
         'month',
-        F.col('avg(wind_direction)').alias('wind_direction'),
-        F.col('avg(wind_speed)').alias('wind_speed'),
-        F.col('avg(temp_kelvin)').alias('temp_kelvin'),
-        F.col('avg(humidity)').alias('humidity'),
-        F.col('avg(heigh_clouds)').alias('heigh_clouds'),
-        F.col('avg(temp_degree)').alias('temp_degree'),
-        F.col('avg(altitude)').alias('altitude')
+        F.round(F.col('avg(wind_direction)'),2).alias('wind_direction'),
+        F.round(F.col('avg(wind_speed)'),2).alias('wind_speed'),
+        F.round(F.col('avg(temp_kelvin)'),2).alias('temp_kelvin'),
+        F.round(F.col('avg(humidity)'),2).alias('humidity'),
+        F.round(F.col('avg(heigh_clouds)'),2).alias('heigh_clouds'),
+        F.round(F.col('avg(temp_degree)'),2).alias('temp_degree'),
+        F.round(F.col('avg(altitude)'),2).alias('altitude')
     ) # rename columns
     .union(weather) # get data for all departements
     .where("department_number IS NOT NULL") # remove unrelevant data
@@ -93,7 +103,7 @@ full_weather = (all_possible_not_dep.withColumnRenamed('neigh', 'department_numb
         .otherwise(F.col('department_number'))
     ) 
 )
-display(full_weather)
+display(full_weather.orderBy("year","month","department_number"))
 
 # COMMAND ----------
 
