@@ -50,7 +50,7 @@ df_final = (
 # COMMAND ----------
 
 # replace question with 3 answers by only one 
-Dictionnary = (
+Dictionary = (
     df_final.select(
         F.col('Name').alias('column_name'),
         F.col('VARNUM').alias('varnum'),
@@ -96,6 +96,6 @@ Dictionnary = (
 # COMMAND ----------
 
 # save as table
-Dictionnary.write.mode('overwrite')\
+Dictionary.write.mode('overwrite')\
         .format("parquet") \
         .saveAsTable("Gold.Dictionnary")

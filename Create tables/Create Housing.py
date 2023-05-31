@@ -30,7 +30,7 @@ housing = (
         F.col('Respondent_Serial').alias('id_owner'),
         F.when(F.col('cd_postal') < 10000, F.concat(F.lit("0"), F.col('cd_postal').cast('string')))
             .otherwise(F.col('cd_postal').cast('string'))
-            .alias('cd_postal'),
+            .alias('postal_code'),
         F.col('main_Q101').alias('type'),
         F.col('main_Q102').alias('construction_date'),
         F.col('main_Q103').alias('heating_system'),

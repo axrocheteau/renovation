@@ -67,10 +67,10 @@ regions = (
 
 # COMMAND ----------
 
-df_commune = (
+df_municipality = (
     pop_commune.select( # populations info
-        F.col('DEPCOM').alias('code_insee'),
-        F.col('COM').alias('commune_name'),
+        F.col('DEPCOM').alias('insee_code'),
+        F.col('COM').alias('municipality_name'),
         F.col('PMUN').alias('population'),
         F.col('DEPCOM').substr(0,2).alias('department_number')
     )
@@ -99,16 +99,16 @@ df_commune = (
                     .when(F.col('classe_estimation_ges') == 'G', 7.0)
                     .otherwise(0.0)
                     .alias('ges'),
-                F.col('code_insee_commune_actualise').alias('code_insee')
+                F.col('code_insee_commune_actualise').alias('insee_code')
             )
-            .groupBy('code_insee').agg(F.avg('dpe'), F.avg('ges'), F.count('code_insee'))
+            .groupBy('insee_code').agg(F.avg('dpe'), F.avg('ges'), F.count('insee_code'))
             .select(
-                F.col('code_insee'),
+                F.col('insee_code'),
                 F.round(F.col('avg(dpe)'),2).alias('avg_dpe'),
                 F.round(F.col('avg(ges)'),2).alias('avg_ges'),
-                F.col('count(code_insee)').alias('n_dpe')
+                F.col('count(insee_code)').alias('n_dpe')
             ),
-        ['code_insee'],
+        ['insee_code'],
         'left_outer'
     )
     .join( # elec consumption info
@@ -118,22 +118,22 @@ df_commune = (
             )
             .select(
                 (F.col('Consommation Résidentiel  (MWh)') / F.col('Nombre de points Résidentiel')).alias('consumption_by_residence'),
-                F.col('Code Commune').alias('code_insee')
+                F.col('Code Commune').alias('insee_code')
             )
             .where('consumption_by_residence IS NOT NULL')
-            .groupBy('code_insee').agg(F.round(F.avg('consumption_by_residence'),2).alias('consumption_by_residence')),
-        ['code_insee'],
+            .groupBy('insee_code').agg(F.round(F.avg('consumption_by_residence'),2).alias('consumption_by_residence')),
+        ['insee_code'],
         'left_outer'
     )
     .join( # get postal codes
         code_commune.select(
-            F.col('Code_commune_INSEE').alias('code_insee'),
+            F.col('Code_commune_INSEE').alias('insee_code'),
             # correct postal codes interpreted as int
             F.when(F.col('Code_postal') < 10000, F.concat(F.lit("0"), F.col('Code_postal').cast('string')))
                 .otherwise(F.col('Code_postal').cast('string'))
-                .alias('cd_postal')
+                .alias('postal_code')
             ),
-        ['code_insee'],
+        ['insee_code'],
         'left_outer'
     )
     .join( # get construction licence
@@ -142,10 +142,10 @@ df_commune = (
             )
             .select(
                 F.col('NB_LGT_TOT_CREES').alias('nb_housing'),
-                F.col('COMM').alias('code_insee')
+                F.col('COMM').alias('insee_code')
             )
-            .groupBy('code_insee').agg(F.sum('nb_housing').alias('n_construction_licence')),
-        ['code_insee'],
+            .groupBy('insee_code').agg(F.sum('nb_housing').alias('n_construction_licence')),
+        ['insee_code'],
         'left_outer'
     )
     .join( # get destruction licence
@@ -153,10 +153,10 @@ df_commune = (
                 F.col('DATE_REELLE_AUTORISATION').between(F.lit("2014-01-01"), F.lit("2017-01-01"))
             )
             .select(
-                F.col('COMM').alias('code_insee')
+                F.col('COMM').alias('insee_code')
             )
-            .groupBy('code_insee').agg(F.count('code_insee').alias('n_destruction_licence')),
-        ['code_insee'],
+            .groupBy('insee_code').agg(F.count('insee_code').alias('n_destruction_licence')),
+        ['insee_code'],
         'left_outer'
     )
     .join( # get development licence
@@ -164,10 +164,10 @@ df_commune = (
                 F.col('DATE_REELLE_AUTORISATION').between(F.lit("2014-01-01"), F.lit("2017-01-01"))
             )
             .select(
-                F.col('COMM').alias('code_insee')
+                F.col('COMM').alias('insee_code')
             )
-            .groupBy('code_insee').agg(F.count('code_insee').alias('n_development_licence')),
-        ['code_insee'],
+            .groupBy('insee_code').agg(F.count('insee_code').alias('n_development_licence')),
+        ['insee_code'],
         'left_outer'
     )
     .join( # get regions info and dep name
@@ -181,18 +181,18 @@ df_commune = (
         'n_construction_licence': F.when(F.col('n_construction_licence').isNull(), 0).otherwise(F.col('n_construction_licence')),
         'n_dpe': F.when(F.col('n_dpe').isNull(), 0).otherwise(F.col('n_dpe')),
         # add an id for every town
-        "id_commune": F.monotonically_increasing_id()
+        "id_municipality": F.monotonically_increasing_id()
     })
 )
 
 # COMMAND ----------
 
 # reorder columns
-df_commune = df_commune.select(
-    'id_commune',
-    'cd_postal',
-    'code_insee',
-    'commune_name',
+df_municipality = df_municipality.select(
+    'id_municipality',
+    'postal_code',
+    'insee_code',
+    'municipality_name',
     'department_number',
     'department_name',
     'former_region_name',
@@ -208,11 +208,11 @@ df_commune = df_commune.select(
     'avg_ges',
     'consumption_by_residence'
 )
-display(df_commune)
+display(df_municipality)
 
 # COMMAND ----------
 
 # save as table
-df_commune.write.mode('overwrite')\
+df_municipality.write.mode('overwrite')\
         .format("parquet") \
         .saveAsTable("Gold.Commune")
