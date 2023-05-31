@@ -215,4 +215,4 @@ display(df_municipality)
 # save as table
 df_municipality.write.mode('overwrite')\
         .format("parquet") \
-        .saveAsTable("Gold.Commune")
+        .saveAsTable("Gold.Municipality")
