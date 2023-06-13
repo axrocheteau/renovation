@@ -42,7 +42,7 @@ housing = (
         F.col('main_Q53').alias('energy_reduction'),
         F.col('main_Q38').alias('adjoining'),
         F.col('main_Q39').alias('n_floors'),
-        F.col('main_Q40').alias('floor_nb')
+        F.col('main_Q40').alias('floor')
     )
     .dropDuplicates()
     .select(F.monotonically_increasing_id().alias('id_housing'),"*")
