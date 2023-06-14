@@ -20,20 +20,19 @@ spark = SparkSession \
 # COMMAND ----------
 
 # load df
-df = spark.sql("SELECT * FROM datalake.pop_commune")
+df = spark.sql("SELECT * FROM datalake.pop_commune_2016")
 
 # COMMAND ----------
 
-pop_commune = spark.sql("SELECT * FROM datalake.pop_commune")
+pop_commune = spark.sql("SELECT * FROM datalake.pop_commune_2016")
 former_new_region = spark.sql("SELECT * FROM datalake.former_new_region")
-dpe_france = spark.sql("SELECT * FROM datalake.dpe_france")
+dpe_france = spark.sql("SELECT * FROM datalake.dpe_france_2012")
 elec = spark.sql("SELECT * FROM datalake.elec")
-construction_licence = spark.sql("SELECT * FROM datalake.construction_licence")
+construction_licence = spark.sql("SELECT * FROM datalake.construction_licence_2016")
 destruction_licence = spark.sql("SELECT * FROM datalake.destruction_licence")
 development_licence = spark.sql("SELECT * FROM datalake.development_licence")
 code_commune = spark.sql("SELECT * FROM datalake.code_commune")
-pop_department = spark.sql("SELECT * FROM datalake.pop_department")
-pop_region = spark.sql("SELECT * FROM datalake.pop_region")
+pop_department = spark.sql("SELECT * FROM datalake.pop_dep_2016")
 
 # COMMAND ----------
 
@@ -215,4 +214,4 @@ display(df_municipality)
 # save as table
 df_municipality.write.mode('overwrite')\
         .format("parquet") \
-        .saveAsTable("Gold.Municipality")
+        .saveAsTable("Silver.Municipality")

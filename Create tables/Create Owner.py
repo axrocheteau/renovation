@@ -52,4 +52,4 @@ display(owner)
 # save as table
 owner.write.mode('overwrite')\
         .format("parquet") \
-        .saveAsTable("Gold.Owner")
+        .saveAsTable("Silver.Owner")

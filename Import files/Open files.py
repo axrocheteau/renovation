@@ -1,6 +1,9 @@
 # Databricks notebook source
 from os.path import abspath
 from pyspark.sql import SparkSession
+import zipfile
+import io
+import os
 
 # spark session to warehouse
 warehouse_location = abspath('spark-warehouse')
@@ -14,10 +17,32 @@ spark = SparkSession \
 # COMMAND ----------
 
 # Create Database store raw files
+spark.sql("DROP DATABASE IF EXISTS Datalake CASCADE")
 spark.sql("CREATE DATABASE IF NOT EXISTS Datalake")
 
 # Create Database store modified files
+spark.sql("DROP DATABASE IF EXISTS Silver CASCADE")
+spark.sql("CREATE DATABASE IF NOT EXISTS Silver")
+
+# Create Database store final modifie files
+spark.sql("DROP DATABASE IF EXISTS Gold CASCADE")
 spark.sql("CREATE DATABASE IF NOT EXISTS Gold")
+
+
+# COMMAND ----------
+
+dbutils.fs.ls('file:/')
+
+# COMMAND ----------
+
+# zip_file = "/dpe"
+# name = "dpe_france_2021"
+# with zipfile.ZipFile(zip_file, "r") as z:
+#     for filename in z.namelist():
+#         with z.open(filename) as f:
+#             extracted_file = os.path.join("/FileStore/tables/", name)
+#             with open(extracted_file, "wb") as output:
+#                 output.write(f.read())
 
 # COMMAND ----------
 
@@ -27,21 +52,23 @@ spark.sql("CREATE DATABASE IF NOT EXISTS Gold")
 # create database
 # File location and type
 info_array = [
-    {"location" : "/FileStore/tables/Communes.csv", "name": "pop_commune", "delimiter": ";"},
-    {"location" : "/FileStore/tables/Departements.csv", "name": "pop_department", "delimiter": ";"},
-    {"location" : "/FileStore/tables/PC_DP_creant_logements_2013_2016.csv", "name": "construction_licence", "delimiter": ";"},
-    {"location" : "/FileStore/tables/Regions.csv", "name": "pop_region", "delimiter": ";"},
+    {"location" : "/FileStore/tables/pop_commune_2016", "name": "pop_commune_2016", "delimiter": ";"},
+    {"location" : "/FileStore/tables/pop_commune_2020", "name": "pop_commune_2020", "delimiter": ";"},
+    {"location" : "/FileStore/tables/pop_dep_2016.csv", "name": "pop_department_2016", "delimiter": ";"},
+    {"location" : "/FileStore/tables/permis_construire_2013_2016.csv", "name": "construction_licence_2016", "delimiter": ";"},
+    {"location" : "FileStore/tables/permis_construire_2017_2023.csv", "name": "construction_licence_2023", "delimiter": ";"},
     {"location" : "/FileStore/tables/TREMI_2017_CodeBook_public8.txt", "name": "codebook", "delimiter": "\t"},
     {"location" : "/FileStore/tables/TREMI_2017_Résultats_enquête_bruts.csv", "name": "tremi", "delimiter": ";"},
     {"location" : "/FileStore/tables/anciennes_nouvelles_regions.csv", "name": "former_new_region", "delimiter": ";"},
     {"location" : "/FileStore/tables/code_commune.csv", "name": "code_commune", "delimiter": ";"},
-    {"location" : "/FileStore/tables/conso_elec_gaz_annuelle_par_secteur_dactivite_agregee_commune__1_.csv", "name": "elec", "delimiter": ";"},
-    {"location" : "/FileStore/tables/donnees_synop_essentielles_omm.csv", "name": "weather", "delimiter": ";"},
-    {"location" : "/FileStore/tables/dpe_france.csv", "name": "dpe_france", "delimiter": ","},
+    {"location" : "/FileStore/tables/conso_elec.csv", "name": "elec", "delimiter": ";"},
+    {"location" : "/FileStore/tables/meteo.csv", "name": "weather", "delimiter": ";"},
+    {"location" : "/FileStore/tables/dpe_france_2012.csv", "name": "dpe_france_2012", "delimiter": ","},
+    {"location" : "/FileStore/tables/dpe_france_2021.csv", "name": "dpe_france_2021", "delimiter": ","},
     {"location" : "/FileStore/tables/permis_amenager.csv", "name": "development_licence", "delimiter": ";"},
     {"location" : "/FileStore/tables/permis_demolir.csv", "name": "destruction_licence", "delimiter": ";"},
     {"location" : "/FileStore/tables/dep_limitrophe.csv", "name": "neighbouring_dep", "delimiter": ";"}
-]      
+]         
 
 file_type = "csv"
 

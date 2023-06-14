@@ -21,7 +21,7 @@ spark = SparkSession \
 
 # load df
 tremi = spark.sql("SELECT * FROM datalake.tremi")
-Dictionnary = spark.sql("SELECT * FROM Gold.Dictionnary")
+Dictionnary = spark.sql("SELECT * FROM Silver.Dictionary")
 
 
 # COMMAND ----------
@@ -49,4 +49,4 @@ display(answer)
 # save as table
 answer.write.mode('overwrite')\
         .format("parquet") \
-        .saveAsTable("Gold.Answer")
+        .saveAsTable("Silver.Answer")

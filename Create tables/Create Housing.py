@@ -37,7 +37,6 @@ housing = (
         F.col('main_Q104').alias('hot_water_system'),
         F.col('main_Q32').alias('heating_production'),
         F.col('main_Q34').alias('heating_emission'),
-        F.col('main_Q35').alias('hot_water_production'),
         F.col('main_Q41q42').alias('surface'),
         F.col('main_Q1_97').alias('has_done_renov'),
         F.col('main_Q43').alias('DPE_before'),
@@ -57,4 +56,4 @@ display(housing)
 # save as table
 housing.write.mode('overwrite')\
         .format("parquet") \
-        .saveAsTable("Gold.Housing")
+        .saveAsTable("Silver.Housing")

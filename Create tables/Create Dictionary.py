@@ -98,4 +98,4 @@ Dictionary = (
 # save as table
 Dictionary.write.mode('overwrite')\
         .format("parquet") \
-        .saveAsTable("Gold.Dictionary")
+        .saveAsTable("Silver.Dictionary")
