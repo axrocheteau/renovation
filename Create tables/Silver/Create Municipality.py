@@ -32,7 +32,7 @@ construction_licence = spark.sql("SELECT * FROM datalake.construction_licence_20
 destruction_licence = spark.sql("SELECT * FROM datalake.destruction_licence")
 development_licence = spark.sql("SELECT * FROM datalake.development_licence")
 code_commune = spark.sql("SELECT * FROM datalake.code_commune")
-pop_department = spark.sql("SELECT * FROM datalake.pop_dep_2016")
+pop_department = spark.sql("SELECT * FROM datalake.pop_department_2016")
 
 # COMMAND ----------
 
