@@ -22,3 +22,7 @@ spark = SparkSession \
 # load df
 tremi = spark.sql("SELECT * FROM datalake.tremi")
 Dictionnary = spark.sql("SELECT * FROM Silver.Dictionary")
+
+# COMMAND ----------
+
+

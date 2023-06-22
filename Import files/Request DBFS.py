@@ -28,3 +28,7 @@ dbutils.fs.rm("/FileStore/tables", True)
 # COMMAND ----------
 
 dbutils.fs.mkdirs("/FileStore/tables")
+
+# COMMAND ----------
+
+dbutils.fs.ls("file:/")

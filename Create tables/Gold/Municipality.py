@@ -44,27 +44,8 @@ municipality = (
     )
 )
 
-print(silver_municipality.count(), municipality.count())
-display(municipality)
-
 # COMMAND ----------
 
-
-test = spark.sql("SELECT * FROM datalake.code_commune")
-test2 = spark.sql("SELECT * FROM datalake.pop_commune_2016")
-test3 = spark.sql("SELECT * FROM datalake.pop_commune_2020")
-
-without_corsica = test.filter((~F.col('Code_commune_INSEE').contains('2A%')) & (~F.col('Code_commune_INSEE').contains('2B')))
-without_dom = without_corsica.filter((F.col('Code_commune_INSEE').astype('int') < 96000))
-without_corsica2 = test2.filter((~F.col('DEPCOM').contains('2A')) & (~F.col('DEPCOM').contains('2B')))
-
-print(f"nb_code postaux : {test.select('Code_postal').dropDuplicates().count()}")
-print(f"nb_code postaux sans corse : {without_corsica.select('Code_postal').dropDuplicates().count()}")
-
-print(f"nb_code insee : {test.select('Code_commune_INSEE').dropDuplicates().count()}")
-print(f"nb_code insee sans corse : {without_corsica.select('Code_commune_INSEE').dropDuplicates().count()}")
-
-print(f"nb_code insee : {test2.select('COM').dropDuplicates().count()}")
-print(f"nb_code insee sans corse : {without_corsica2.select('COM').dropDuplicates().count()}")
-
-print(f"nb_code postaux sans dom : {without_dom.select('Code_postal').dropDuplicates().count()}")
+municipality.write.mode('overwrite')\
+        .format("parquet") \
+        .saveAsTable("Gold.Municipality")
