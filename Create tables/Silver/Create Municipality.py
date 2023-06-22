@@ -19,11 +19,6 @@ spark = SparkSession \
 
 # COMMAND ----------
 
-# load df
-df = spark.sql("SELECT * FROM datalake.pop_commune_2016")
-
-# COMMAND ----------
-
 pop_commune = spark.sql("SELECT * FROM datalake.pop_commune_2016")
 former_new_region = spark.sql("SELECT * FROM datalake.former_new_region")
 dpe_france = spark.sql("SELECT * FROM datalake.dpe_france_2012")
@@ -63,15 +58,27 @@ regions = (
     )
     .dropDuplicates()
 )
+display(regions)
 
 # COMMAND ----------
 
 df_municipality = (
-    pop_commune.select( # populations info
-        F.col('DEPCOM').alias('insee_code'),
-        F.col('COM').alias('municipality_name'),
-        F.col('PMUN').alias('population'),
-        F.col('DEPCOM').substr(0,2).alias('department_number')
+    code_commune.select(
+    F.col('Code_commune_INSEE').alias('insee_code'),
+    # correct postal codes interpreted as int
+    F.when(F.col('Code_postal') < 10000, F.concat(F.lit("0"), F.col('Code_postal').cast('string')))
+        .otherwise(F.col('Code_postal').cast('string'))
+        .alias('postal_code')
+    )
+    .join(
+        pop_commune.select( # populations info
+            F.col('DEPCOM').alias('insee_code'),
+            F.col('COM').alias('municipality_name'),
+            F.col('PMUN').alias('population'),
+            F.col('DEPCOM').substr(0,2).alias('department_number')
+        ),
+        ['insee_code'],
+        'left_outer'
     )
     .join( # dpe and ges info
         dpe_france.filter( # only take dpe between 2014 and 2016, ges and dpe that are relevant  
@@ -124,17 +131,6 @@ df_municipality = (
         ['insee_code'],
         'left_outer'
     )
-    .join( # get postal codes
-        code_commune.select(
-            F.col('Code_commune_INSEE').alias('insee_code'),
-            # correct postal codes interpreted as int
-            F.when(F.col('Code_postal') < 10000, F.concat(F.lit("0"), F.col('Code_postal').cast('string')))
-                .otherwise(F.col('Code_postal').cast('string'))
-                .alias('postal_code')
-            ),
-        ['insee_code'],
-        'left_outer'
-    )
     .join( # get construction licence
         construction_licence.filter(
                 F.col('DATE_REELLE_AUTORISATION').between(F.lit("2014-01-01"), F.lit("2017-01-01"))
@@ -174,6 +170,7 @@ df_municipality = (
         ['department_number'],
         'inner'
     )
+    .dropDuplicates()
     .withColumns({ # put null values to 0 to make sense
         'n_development_licence': F.when(F.col('n_development_licence').isNull(), 0).otherwise(F.col('n_development_licence')),
         'n_destruction_licence': F.when(F.col('n_destruction_licence').isNull(), 0).otherwise(F.col('n_destruction_licence')),
@@ -183,6 +180,7 @@ df_municipality = (
         "id_municipality": F.monotonically_increasing_id()
     })
 )
+
 
 # COMMAND ----------
 
@@ -207,7 +205,6 @@ df_municipality = df_municipality.select(
     'avg_ges',
     'consumption_by_residence'
 )
-display(df_municipality)
 
 # COMMAND ----------
 
