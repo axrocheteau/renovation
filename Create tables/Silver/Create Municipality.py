@@ -64,11 +64,11 @@ display(regions)
 
 df_municipality = (
     code_commune.select(
-    F.col('Code_commune_INSEE').alias('insee_code'),
-    # correct postal codes interpreted as int
-    F.when(F.col('Code_postal') < 10000, F.concat(F.lit("0"), F.col('Code_postal').cast('string')))
-        .otherwise(F.col('Code_postal').cast('string'))
-        .alias('postal_code')
+        F.col('Code_commune_INSEE').alias('insee_code'),
+        # correct postal codes interpreted as int
+        F.when(F.col('Code_postal') < 10000, F.concat(F.lit("0"), F.col('Code_postal').cast('string')))
+            .otherwise(F.col('Code_postal').cast('string'))
+            .alias('postal_code')
     )
     .join(
         pop_commune.select( # populations info
