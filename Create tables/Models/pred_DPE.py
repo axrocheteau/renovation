@@ -21,11 +21,41 @@ spark = SparkSession \
 # COMMAND ----------
 
 # load df
-dpe_2021 = spark.sql("SELECT * FROM Datalake.dpe_france_2021")
-municipality = spark.sql("SELECT * FROM Gold.Municipality")
+dpe = spark.sql("SELECT * FROM Gold.DPE")
+housing = spark.sql("SELECT * FROM Gold.Housing")
 
 # COMMAND ----------
 
-# dpe.write.mode('overwrite')\
-#         .format("parquet") \
-#         .saveAsTable("Gold.DPE")
+training = (
+    dpe.select(
+        F.col('Type'),
+        F.col('construction_date'),
+        F.col('heating_system'),
+        F.col('hot_water_system'),
+        F.col('heating_production'),
+        F.col('heating_emission'),
+        F.col('GES_emission'),
+        F.col('DPE_consumption')
+    )
+)
+
+prediction = (
+    housing.select(
+        F.col('Type'),
+        F.col('construction_date'),
+        F.col('heating_system'),
+        F.col('hot_water_system'),
+        F.col('heating_production'),
+        F.col('heating_emission'),
+        F.col('GES_emission'),
+        F.col('DPE_consumption')
+    )
+)
+print(training.count(), prediction.count())
+display(training)
+
+# COMMAND ----------
+
+training.write.mode('overwrite')\
+        .format("parquet") \
+        .saveAsTable("Model.training_dpe")
