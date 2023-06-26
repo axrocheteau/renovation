@@ -21,8 +21,54 @@ spark = SparkSession \
 # COMMAND ----------
 
 # load df
-dpe_2021 = spark.sql("SELECT * FROM Datalake.dpe_france_2021")
+owner = spark.sql("SELECT * FROM Gold.Owner")
+housing = spark.sql("SELECT * FROM Gold.Housing")
 municipality = spark.sql("SELECT * FROM Gold.Municipality")
+municipality_info = spark.sql("SELECT * FROM Gold.Municipality_info")
+
+# COMMAND ----------
+
+training_tremi = (
+    owner.join(
+        housing.select(
+            F.col('id_owner'),
+            F.col('id_municipality'),
+            F.col('first_date_renov'),
+            F.col('surface')
+        ),
+        ['id_owner'],
+        'inner'
+    )
+    .join(
+        municipality.select(
+            F.col('id_municipality'),
+            F.col('department_number')
+        ),
+        ['id_municipality'],
+        'inner'
+    )
+    .join(
+        municipality_info,
+        F.col('first_date_renov') == F.col('year'),
+        'inner'
+    )
+    .select(
+        F.col('gender'),
+        F.col('age'),
+        F.col('occupation'),
+        F.col('home_state'),
+        F.col('nb_persons_home'),
+        F.col('income_home'),
+        F.col('population'),
+        F.col('n_development_licence'),
+        F.col('n_construction_licence'),
+        F.col('n_new_buildings'),
+        F.col('n_destruction_licence'),
+        F.col('department_number'),
+        F.col('surface')
+    )
+)
+display(training_tremi)
 
 # COMMAND ----------
 
