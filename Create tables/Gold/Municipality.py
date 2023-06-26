@@ -34,10 +34,10 @@ municipality = (
         F.col('new_region_name'),
         F.col('new_region_number')
     )
-    .filter(
+    .filter( # not in corsica
         ~F.col('department_number').isin(['2A' ,'2B'])
     )
-    .dropDuplicates()
+    .dropDuplicates() # to change granularity to postal_code
     .select(
         F.monotonically_increasing_id().alias('id_municipality'),
         '*'

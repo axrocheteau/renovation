@@ -39,7 +39,7 @@ owner = (
         F.col('income')
     )
     .join(
-        # détenteur d'une maison ou d'un appartement
+        # have a house or an appartment
         (
             silver_housing.select(
                 F.col('id_owner'),
@@ -50,11 +50,11 @@ owner = (
         ['id_owner'],
         'inner'
     )
-    .filter(
-        (F.col('nb_persons_home') != 99) & # a répondu à la question
+    .filter( # all infos are available for this owner
+        (F.col('nb_persons_home') != 99) &
         (F.col('nb_persons_home').isNotNull()) &
         (F.col('age').isNotNull()) &
-        (~F.col('income').isin([10,11,99])) & # a répondu à la question en donnant une valeur
+        (~F.col('income').isin([10,11,99])) &
         (F.col('income').isNotNull())
     )
     .withColumns({

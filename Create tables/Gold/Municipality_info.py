@@ -36,6 +36,7 @@ municipality = spark.sql("SELECT * FROM Gold.Municipality")
 
 # COMMAND ----------
 
+# create fake column year for the population count
 column = ['year']
 list_year_2018 = [2012, 2013, 2014, 2015, 2016, 2017, 2018]
 year_2018 = map(lambda x : Row(x), list_year_2018)
@@ -47,7 +48,7 @@ df_year_2022 = spark.createDataFrame(year_2022, column)
 
 pop_commune = (
     pop_commune_2020.withColumns({
-        'CODCOM_corrected': (
+        'CODCOM_corrected': ( # put this codcom as string to be able to create real insse_code
             F.when(F.col('CODCOM') < 10, F.concat(F.lit('00'), F.col('CODCOM').astype('string')))
             .when(F.col('CODCOM') < 100, F.concat(F.lit('0'), F.col('CODCOM').astype('string')))
             .otherwise(F.col('CODCOM').astype('string'))
@@ -59,19 +60,17 @@ pop_commune = (
         'insee_code',
         'population'
     )
-    .join(
-        df_year_2022
-    )
-    .union(
+    .join(df_year_2022) # cartesian product with years
+    .union( # add population from 2016
         (
             pop_commune_2016.select(
                 F.col('DEPCOM').alias('insee_code'),
                 F.col('PMUN').alias('population')
             )
-            .join(df_year_2018)
+            .join(df_year_2018) # cartesian product with years
         )
     )
-    .join(
+    .join( # replace postal_code with id_municipality
         (
             code_commune.select(
                 F.col('Code_commune_INSEE').alias('insee_code'),
@@ -98,7 +97,7 @@ display(pop_commune)
 
 # COMMAND ----------
 
-construction_licence = (
+construction_licence = ( # all construction licences
     construction_licence_2016.select(
         F.col('NB_LGT_TOT_CREES').alias('nb_housing'),
         F.col('COMM').alias('insee_code'),
@@ -120,22 +119,22 @@ construction_licence = (
             F.sum('nb_housing').alias('n_new_buildings'),
             F.count('nb_housing').alias('n_construction_licence')
         )
+        .filter(F.col('year') < 2023) # cut current year
     )
 )
 
-print(construction_licence.select('insee_code').dropDuplicates().count(), construction_licence.count(), construction_licence_2016.count(), construction_licence_2023.count())
 display(construction_licence)
 
 
 # COMMAND ----------
 
 municipality_info = (
-    pop_commune.join(
+    pop_commune.join( # construction licence
         construction_licence,
         ['insee_code', 'year'],
         'left_outer'
     )
-    .join(
+    .join( # get destruction licence
         destruction_licence
             .select(
                 F.col('COMM').alias('insee_code'),
@@ -165,7 +164,7 @@ municipality_info = (
         'n_destruction_licence': F.when(F.col('n_destruction_licence').isNull(), 0).otherwise(F.col('n_destruction_licence')),
         'n_construction_licence': F.when(F.col('n_construction_licence').isNull(), 0).otherwise(F.col('n_construction_licence'))
     })
-    .groupBy('postal_code', 'year')
+    .groupBy('postal_code', 'year') # aggregate to postal_code level
     .agg(
         F.sum('population').alias('population'),
         F.sum('n_construction_licence').alias('n_construction_licence'),
@@ -173,7 +172,7 @@ municipality_info = (
         F.sum('n_destruction_licence').alias('n_destruction_licence'),
         F.sum('n_development_licence').alias('n_development_licence')
     )
-    .join(
+    .join( # replace postal_code with id_municipality
         municipality
             .select(
                 F.col('id_municipality'),
@@ -188,6 +187,7 @@ municipality_info = (
         (F.col('postal_code').astype('int') < 96000)
     )
     .dropDuplicates()
+    .drop('postal_code')
 )    
 
 display(municipality_info)  

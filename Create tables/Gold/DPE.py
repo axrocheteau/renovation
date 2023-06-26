@@ -88,6 +88,7 @@ dpe = (
         # not an irrelevant value
         (F.col("Type_énergie_principale_chauffage").isin(energy_list)) &
         (F.col("Type_installation_chauffage_n°1").cast("float").isNull()) &
+        (F.col("Conso_5_usages_é_finale").cast("float").isNotNull()) &
         (F.col("Type_énergie_générateur_ECS_n°1").isin(energy_list)) &
         (F.col("Type_bâtiment") != "immeuble") &
         (F.col("Date_établissement_DPE") > F.lit("2014-01-01")) &
@@ -95,7 +96,7 @@ dpe = (
         (F.col("Année_construction") < 2024) &
         (F.col("Année_construction") > 1700)
     )
-    .withColumns({
+    .withColumns({ # rename columns and modify them according to documentation
         'id_dpe' : F.col('N°DPE'),
         'dpe_date' : (
             F.when(F.year(F.col('Date_établissement_DPE')) == 2023, 2022)
@@ -194,7 +195,7 @@ dpe = (
         F.col('heating_emission'),
         F.col('hot_water_system'),
         F.col('surface'),
-        F.col('DPE_consumption'),
+        F.col('DPE_consumption').cast('double'), # is string otherwise
         F.col('GES_emission'),
         F.col('has_to_renov')
     )

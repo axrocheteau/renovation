@@ -40,11 +40,11 @@ housing = (
         'left_outer'
     )
     .join(
-        owner_silver.filter(
-            (F.col('nb_persons_home') != 99) & # a répondu à la question
+        owner_silver.filter( # select owners who responded to every question necessary
+            (F.col('nb_persons_home') != 99) & 
             (F.col('nb_persons_home').isNotNull()) &
             (F.col('age').isNotNull()) &
-            (~F.col('income').isin([10,11,99])) & # a répondu à la question en donnant une valeur
+            (~F.col('income').isin([10,11,99])) &
             (F.col('income').isNotNull())  
         )
         .select(F.col('id_owner')),
@@ -60,7 +60,7 @@ housing = (
         ['postal_code'],
         'inner'
     )
-    .withColumns({
+    .withColumns({ # modify values according to documentation
         'type': (
             F.when(F.col('type') == 1, 0)
             .when(F.col('type') == 2, 1)
