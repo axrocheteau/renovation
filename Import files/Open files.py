@@ -20,6 +20,7 @@ spark = SparkSession \
 # spark.sql("DROP DATABASE IF EXISTS Datalake CASCADE")
 # spark.sql("DROP DATABASE IF EXISTS Silver CASCADE")
 # spark.sql("DROP DATABASE IF EXISTS Gold CASCADE")
+# spark.sql("DROP DATABASE IF EXISTS Model CASCADE")
 
 # Create Database store raw files
 spark.sql("CREATE DATABASE IF NOT EXISTS Datalake")
@@ -29,6 +30,9 @@ spark.sql("CREATE DATABASE IF NOT EXISTS Silver")
 
 # Create Database store final modifie files
 spark.sql("CREATE DATABASE IF NOT EXISTS Gold")
+
+# Create Database store final modifie files
+spark.sql("CREATE DATABASE IF NOT EXISTS Model")
 
 
 # COMMAND ----------

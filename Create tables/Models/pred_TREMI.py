@@ -34,7 +34,9 @@ training_tremi = (
             F.col('id_owner'),
             F.col('id_municipality'),
             F.col('first_date_renov'),
-            F.col('surface')
+            F.col('surface'),
+            F.col('heating_production'),
+            F.col('heating_emission')
         ),
         ['id_owner'],
         'inner'
@@ -49,7 +51,7 @@ training_tremi = (
     )
     .join(
         municipality_info,
-        F.col('first_date_renov') == F.col('year'),
+        [F.col('first_date_renov') == F.col('year'), F.col('housing.id_municipality') == F.col('municipality_info.id_municipality')],
         'inner'
     )
     .select(
@@ -58,20 +60,50 @@ training_tremi = (
         F.col('occupation'),
         F.col('home_state'),
         F.col('nb_persons_home'),
-        F.col('income_home'),
+        F.col('income'),
         F.col('population'),
         F.col('n_development_licence'),
         F.col('n_construction_licence'),
         F.col('n_new_buildings'),
         F.col('n_destruction_licence'),
         F.col('department_number'),
-        F.col('surface')
+        F.col('surface'),
+        F.col('heating_production'),
+        F.col('heating_emission')
     )
 )
+print(training_tremi.count())
 display(training_tremi)
 
 # COMMAND ----------
 
-# dpe.write.mode('overwrite')\
-#         .format("parquet") \
-#         .saveAsTable("Gold.DPE")
+training_surf = training_tremi.filter(F.col('surface').isNotNull()).drop('heating_emission', 'heating_production')
+predicting_surf = training_tremi.filter(F.col('surface').isNull()).drop('heating_emission', 'heating_production')
+
+training_prod = training_tremi.filter(F.col('heating_production').isNotNull()).drop('heating_emission', 'surface')
+predicting_prod = training_tremi.filter(F.col('heating_production').isNull()).drop('heating_emission', 'surface')
+
+training_em = training_tremi.filter(F.col('heating_emission').isNotNull()).drop('surface', 'heating_production')
+predicting_em = training_tremi.filter(F.col('heating_emission').isNull()).drop('surface', 'heating_production')
+
+# trainings = [training_surf, training_prod, training_em]
+# prdictions = [predicting_surf, predicting_prod, predicting_em]
+
+# trainings_name = ['training_surf', 'training_prod', 'training_em']
+# prdictions_name = ['predicting_surf', 'predicting_prod', 'predicting_em']
+
+# print(training_surf.count(), predicting_surf.count(), training_prod.count(), predicting_prod.count(), training_em.count(), predicting_em.count())
+# display(training_surf)
+# display(predicting_surf)
+# display(training_prod)
+# display(predicting_prod)
+# display(training_em)
+# display(predicting_em)
+
+
+
+# COMMAND ----------
+
+training_tremi.write.mode('overwrite')\
+        .format("parquet")\
+        .saveAsTable("Model.training_tremi")
