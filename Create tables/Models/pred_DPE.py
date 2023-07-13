@@ -28,12 +28,11 @@ housing = spark.sql("SELECT * FROM Gold.Housing")
 
 training = (
     dpe.select(
-        F.col('Type'),
+        F.col('type'),
         F.col('construction_date'),
         F.col('heating_system'),
         F.col('hot_water_system'),
         F.col('heating_production'),
-        F.col('heating_emission'),
         F.col('GES_emission'),
         F.col('DPE_consumption')
     )
@@ -41,12 +40,11 @@ training = (
 
 prediction = (
     housing.select(
-        F.col('Type'),
+        F.col('type'),
         F.col('construction_date'),
         F.col('heating_system'),
         F.col('hot_water_system'),
         F.col('heating_production'),
-        F.col('heating_emission'),
         F.col('GES_emission'),
         F.col('DPE_consumption')
     )
@@ -59,3 +57,4 @@ display(training)
 training.write.mode('overwrite')\
         .format("parquet") \
         .saveAsTable("Model.training_dpe")
+

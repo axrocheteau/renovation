@@ -36,7 +36,7 @@ owner = (
         F.col('main_q100_2').alias('home_state'),
         F.col('main_Q44').alias('arrival_date'),
         F.col('main_Q1_97').alias('has_done_renov'),
-        F.col('main_rs102_c').alias('nb_persons_home'),
+        F.col('main_RS102').alias('nb_persons_home'),
         F.col('main_RS182').alias('income'),
         F.col('main_Q73').alias('amount_help'),
         F.col('main_Q75').alias('loan_amount'),

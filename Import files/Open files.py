@@ -37,10 +37,6 @@ spark.sql("CREATE DATABASE IF NOT EXISTS Model")
 
 # COMMAND ----------
 
-dbutils.fs.ls('/FileStore/tables')
-
-# COMMAND ----------
-
 
 # create database
 # File location and type

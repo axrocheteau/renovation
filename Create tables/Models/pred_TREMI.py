@@ -36,7 +36,9 @@ training_tremi = (
             F.col('first_date_renov'),
             F.col('surface'),
             F.col('heating_production'),
-            F.col('heating_emission')
+            F.col('type'),
+            F.col('construction_date'),
+            F.col('heating_system')
         ),
         ['id_owner'],
         'inner'
@@ -61,6 +63,9 @@ training_tremi = (
         F.col('home_state'),
         F.col('nb_persons_home'),
         F.col('income'),
+        F.col('type'),
+        F.col('construction_date'),
+        F.col('heating_system'),
         F.col('population'),
         F.col('n_development_licence'),
         F.col('n_construction_licence'),
@@ -69,7 +74,6 @@ training_tremi = (
         F.col('department_number'),
         F.col('surface'),
         F.col('heating_production'),
-        F.col('heating_emission')
     )
 )
 print(training_tremi.count())
@@ -77,33 +81,60 @@ display(training_tremi)
 
 # COMMAND ----------
 
-training_surf = training_tremi.filter(F.col('surface').isNotNull()).drop('heating_emission', 'heating_production')
-predicting_surf = training_tremi.filter(F.col('surface').isNull()).drop('heating_emission', 'heating_production')
+training_surf = training_tremi.filter(F.col('surface').isNotNull()).drop('heating_production')
+predicting_surf = training_tremi.filter(F.col('surface').isNull()).drop('heating_production')
 
-training_prod = training_tremi.filter(F.col('heating_production').isNotNull()).drop('heating_emission', 'surface')
-predicting_prod = training_tremi.filter(F.col('heating_production').isNull()).drop('heating_emission', 'surface')
-
-training_em = training_tremi.filter(F.col('heating_emission').isNotNull()).drop('surface', 'heating_production')
-predicting_em = training_tremi.filter(F.col('heating_emission').isNull()).drop('surface', 'heating_production')
-
-# trainings = [training_surf, training_prod, training_em]
-# prdictions = [predicting_surf, predicting_prod, predicting_em]
-
-# trainings_name = ['training_surf', 'training_prod', 'training_em']
-# prdictions_name = ['predicting_surf', 'predicting_prod', 'predicting_em']
-
-# print(training_surf.count(), predicting_surf.count(), training_prod.count(), predicting_prod.count(), training_em.count(), predicting_em.count())
-# display(training_surf)
-# display(predicting_surf)
-# display(training_prod)
-# display(predicting_prod)
-# display(training_em)
-# display(predicting_em)
-
+training_prod = training_tremi.filter(F.col('heating_production').isNotNull()).drop('surface')
+predicting_prod = training_tremi.filter(F.col('heating_production').isNull()).drop('surface')
 
 
 # COMMAND ----------
 
-training_tremi.write.mode('overwrite')\
-        .format("parquet")\
-        .saveAsTable("Model.training_tremi")
+# librairies
+import numpy as np
+import matplotlib.pyplot as plt
+
+from sklearn.preprocessing import StandardScaler
+
+# random forest
+from sklearn.ensemble import RandomForestClassifier
+
+# HistGboost
+from sklearn.ensemble import HistGradientBoostingClassifier
+
+# COMMAND ----------
+
+def preprocess(df):
+    np_df = df.toPandas().to_numpy()
+    X = np_df[:,:-1]
+    X = StandardScaler().fit_transform(X)
+    y = np_df[:,-1].ravel().astype(int)
+    if 0 not in np.unique(y):
+        y = y - 1
+    return (X, y)
+
+X, y = preprocess(training_surf)
+print(X.shape, y.shape)
+
+# COMMAND ----------
+
+# param_surf = {'class_weight': 'balanced', 'max_depth': 15, 'n_estimators': 171}
+# param_prod = {'class_weight': 'balanced', 'max_depth': 19, 'n_estimators': 171}
+# param_em = {'class_weight': 'balanced', 'max_depth': 16, 'n_estimators': 159}
+
+# model_surf = RandomForestClassifier(**param_surf).fit(*preprocess(training_surf))
+# model_prod = RandomForestClassifier(**param_prod).fit(*preprocess(training_prod))
+# model_em = RandomForestClassifier(**param_em).fit(*preprocess(training_em))
+
+
+# COMMAND ----------
+
+trainings = [
+    {'dataset' : training_surf, 'name' : 'training_surf'},
+    {'dataset' : training_prod, 'name' : 'training_prod'}
+]
+
+for training in trainings:
+    training['dataset'].write.mode('overwrite')\
+            .format("parquet")\
+            .saveAsTable(f"Model.{training['name']}")

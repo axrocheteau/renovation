@@ -27,7 +27,7 @@ silver_municipality = spark.sql("SELECT * FROM Silver.Municipality")
 municipality = (
     silver_municipality.select(
         F.col('postal_code'),
-        F.col('department_number'),
+        F.col('department_number').cast('int'),
         F.col('department_name'),
         F.col('former_region_name'),
         F.col('former_region_number'),

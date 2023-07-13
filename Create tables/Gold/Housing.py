@@ -82,13 +82,10 @@ housing = (
             .when(F.col('heating_production').isin([9]), 1) # gaz
             .when(F.col('heating_production').isin([11]), 4) # autre
         ),
-        'heating_emission' : (
-            F.when(F.col('heating_emission').isin([i for i in range(1, 7)]), 6) # elec
-            .when(F.col('heating_emission').isin([12]), 5) # PAC / air soufflé
-            .when(F.col('heating_emission').isin([7, 10, 11]), 3) # eau chauffée
-            .when(F.col('heating_emission').isin([9]), 2) # fioul
-            .when(F.col('heating_emission').isin([8]), 1) # gaz
-            .when(F.col('heating_emission').isin([13]), 4) # autre
+        'surface' : (
+            F.when(F.col('surface') < 70, 1)
+            .when((F.col('surface') >= 70) & (F.col('surface') < 115), 2)
+            .when(F.col('surface') >= 115, 3)
         ),
         'first_date_renov' : (
             F.when(F.col('has_done_renov') == 1, 2014)
@@ -110,7 +107,6 @@ housing = (
         F.col('construction_date'),
         F.col('heating_system'),
         F.col('heating_production'),
-        F.col('heating_emission'),
         F.col('hot_water_system'),
         F.col('surface'),
         F.col('has_done_renov'),

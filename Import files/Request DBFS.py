@@ -18,7 +18,7 @@ dbutils.fs.ls("/FileStore/tables")
 # COMMAND ----------
 
 # all files
-dbutils.fs.rm("/FileStore/tables", True)
+dbutils.fs.rm("/FileStore/tables/meteo.csv", True)
 
 # COMMAND ----------
 

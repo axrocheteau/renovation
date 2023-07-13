@@ -21,11 +21,270 @@ spark = SparkSession \
 # COMMAND ----------
 
 # load df
-dpe_2021 = spark.sql("SELECT * FROM Datalake.dpe_france_2021")
+dpe = spark.sql("SELECT * FROM Gold.dpe")
+housing = spark.sql("SELECT * FROM Gold.Housing")
+weather = spark.sql("SELECT * FROM Gold.Weather")
 municipality = spark.sql("SELECT * FROM Gold.Municipality")
+municipality_info = spark.sql("SELECT * FROM Gold.Municipality_info")
+
 
 # COMMAND ----------
 
-dpe.write.mode('overwrite')\
+training = (
+    housing.select(
+        F.col('id_owner'),
+        F.col('id_municipality'),
+        F.col('type'),
+        F.col('construction_date'),
+        F.col('surface'),
+        F.col('heating_system'),
+        F.col('hot_water_system'),
+        F.col('heating_production'),
+        F.col('DPE_consumption'),
+        F.col('GES_emission'),
+        F.col('first_date_renov'),
+        F.col('has_done_renov')
+    )
+    .join(
+        municipality_info,
+        [F.col('first_date_renov') == F.col('year'), F.col('housing.id_municipality') == F.col('municipality_info.id_municipality')],
+        'inner'
+    )
+    .join(
+        municipality.select(
+            F.col('id_municipality'),
+            F.col('department_number')
+        ),
+        ['id_municipality'],
+        'inner'
+    )
+    .join(
+        weather.select(
+            F.col('humidity').alias('humidity_2'),
+            F.col('wind_speed').alias('wind_speed_2'),
+            F.col('temp_degree').alias('temp_degree_2'),
+            F.col('year').alias('year_2'),
+            F.col('department_number').alias('department_number_2')
+        ),
+        (
+            (F.col('first_date_renov') == F.col('year_2') + 2) &
+            (F.col('municipality.department_number') == F.col('department_number_2'))
+        ),
+        'inner'
+    )
+    .join(
+        weather.select(
+            F.col('humidity').alias('humidity_1'),
+            F.col('wind_speed').alias('wind_speed_1'),
+            F.col('temp_degree').alias('temp_degree_1'),
+            F.col('year').alias('year_1'),
+            F.col('department_number').alias('department_number_1')
+        ),
+        (
+            (F.col('first_date_renov') == F.col('year_1') + 1) &
+            (F.col('municipality.department_number') == F.col('department_number_1'))
+        ),
+        'inner'
+    )
+    .join(
+        weather.select(
+            F.col('humidity').alias('humidity_0'),
+            F.col('wind_speed').alias('wind_speed_0'),
+            F.col('temp_degree').alias('temp_degree_0'),
+            F.col('year').alias('year_0'),
+            F.col('department_number').alias('department_number_0')
+        ),
+        (
+            (F.col('first_date_renov') == F.col('year_0')) &
+            (F.col('municipality.department_number') == F.col('department_number_0'))
+        ),
+        'inner'
+    )
+    .select(
+        F.col('type'),
+        F.col('construction_date'),
+        F.col('surface'),
+        F.col('heating_system'),
+        F.col('hot_water_system'),
+        F.col('heating_production'),
+        F.col('DPE_consumption'),
+        F.col('GES_emission'),
+        F.col('humidity_0'),
+        F.col('wind_speed_0'),
+        F.col('temp_degree_0'),
+        F.col('humidity_1'),
+        F.col('wind_speed_1'),
+        F.col('temp_degree_1'),
+        F.col('humidity_2'),
+        F.col('wind_speed_2'),
+        F.col('temp_degree_2'),
+        F.col('population'),
+        F.col('n_development_licence'),
+        F.col('n_construction_licence'),
+        F.col('n_destruction_licence'),
+        F.col('n_new_buildings'),
+        F.col('department_number'),
+        F.col('has_done_renov'),
+    )
+)
+
+print(training.count())
+display(training)
+
+
+# COMMAND ----------
+
+prediction = (
+    dpe.select(
+        F.col('id_dpe'),
+        F.col('id_municipality'),
+        F.col('type'),
+        F.col('construction_date'),
+        F.col('surface'),
+        F.col('heating_system'),
+        F.col('hot_water_system'),
+        F.col('heating_production'),
+        F.col('DPE_consumption'),
+        F.col('GES_emission'),
+        F.col('dpe_date'),
+        F.col('has_to_renov')
+    )
+    .join(
+        municipality_info,
+        [F.col('dpe_date') == F.col('year'), F.col('dpe.id_municipality') == F.col('municipality_info.id_municipality')],
+        'inner'
+    )
+    .join(
+        municipality.select(
+            F.col('id_municipality'),
+            F.col('department_number')
+        ),
+        ['id_municipality'],
+        'inner'
+    )
+    .join(
+        weather.select(
+            F.col('humidity').alias('humidity_2'),
+            F.col('wind_speed').alias('wind_speed_2'),
+            F.col('temp_degree').alias('temp_degree_2'),
+            F.col('year').alias('year_2'),
+            F.col('department_number').alias('department_number_2')
+        ),
+        (
+            (F.col('dpe_date') == F.col('year_2') + 2) &
+            (F.col('municipality.department_number') == F.col('department_number_2'))
+        ),
+        'inner'
+    )
+    .join(
+        weather.select(
+            F.col('humidity').alias('humidity_1'),
+            F.col('wind_speed').alias('wind_speed_1'),
+            F.col('temp_degree').alias('temp_degree_1'),
+            F.col('year').alias('year_1'),
+            F.col('department_number').alias('department_number_1')
+        ),
+        (
+            (F.col('dpe_date') == F.col('year_1') + 1) &
+            (F.col('municipality.department_number') == F.col('department_number_1'))
+        ),
+        'inner'
+    )
+    .join(
+        weather.select(
+            F.col('humidity').alias('humidity_0'),
+            F.col('wind_speed').alias('wind_speed_0'),
+            F.col('temp_degree').alias('temp_degree_0'),
+            F.col('year').alias('year_0'),
+            F.col('department_number').alias('department_number_0')
+        ),
+        (
+            (F.col('dpe_date') == F.col('year_0')) &
+            (F.col('municipality.department_number') == F.col('department_number_0'))
+        ),
+        'inner'
+    )
+    .select(
+        F.col('id_dpe'),
+        F.col('type'),
+        F.col('construction_date'),
+        F.col('surface'),
+        F.col('heating_system'),
+        F.col('hot_water_system'),
+        F.col('heating_production'),
+        F.col('DPE_consumption'),
+        F.col('GES_emission'),
+        F.col('humidity_0'),
+        F.col('wind_speed_0'),
+        F.col('temp_degree_0'),
+        F.col('humidity_1'),
+        F.col('wind_speed_1'),
+        F.col('temp_degree_1'),
+        F.col('humidity_2'),
+        F.col('wind_speed_2'),
+        F.col('temp_degree_2'),
+        F.col('population'),
+        F.col('n_development_licence'),
+        F.col('n_construction_licence'),
+        F.col('n_destruction_licence'),
+        F.col('n_new_buildings'),
+        F.col('department_number'),
+        F.col('has_to_renov'),
+    )
+)
+
+print(prediction.count())
+display(prediction)
+
+# COMMAND ----------
+
+# Replace <run-id1> with the run ID you identified in the previous step.
+run_id1 = "ccd2f957af5a4e399875a59839609c84"
+model_uri = "runs:/" + run_id1 + "/model"
+
+import mlflow.sklearn
+model = mlflow.sklearn.load_model(model_uri=model_uri)
+
+import mlflow.pyfunc
+pyfunc_udf = mlflow.pyfunc.spark_udf(spark, model_uri=model_uri)
+
+# COMMAND ----------
+
+predicted_df = (
+    prediction.withColumn("has_to_renov", pyfunc_udf(
+            F.struct(
+                'type',
+                'construction_date',
+                'surface',
+                'heating_system',
+                'hot_water_system',
+                'heating_production',
+                'DPE_consumption',
+                'GES_emission',
+                'humidity_0',
+                'wind_speed_0',
+                'temp_degree_0',
+                'humidity_1',
+                'wind_speed_1',
+                'temp_degree_1',
+                'humidity_2',
+                'wind_speed_2',
+                'temp_degree_2',
+                'population',
+                'n_development_licence',
+                'n_construction_licence',
+                'n_destruction_licence',
+                'n_new_buildings',
+                'department_number',
+            )
+        )
+    )
+)
+display(predicted_df)
+predicted_df.groupBy('has_to_renov').count().show()
+
+# COMMAND ----------
+
+training.write.mode('overwrite')\
         .format("parquet") \
-        .saveAsTable("Gold.DPE")
+        .saveAsTable("Model.training_renov")

@@ -65,12 +65,11 @@ dpe = (
         "Type_installation_ECS_(général)",
         "Surface_habitable_logement",
         "Code_postal_(BAN)",
-        "Conso_5_usages_é_finale",
-        "Emission_GES_5_usages",
         "Type_installation_ECS",
         "Type_énergie_principale_chauffage",
-        "Type_émetteur_installation_chauffage_n°1",
-        "Type_générateur_n°1_installation_n°1"
+        "Type_générateur_n°1_installation_n°1",
+        "Emission_GES_5_usages_par_m²",
+        "Conso_5_usages/m²_é_finale",
     )
     .filter(
         # not null values
@@ -94,7 +93,9 @@ dpe = (
         (F.col("Date_établissement_DPE") > F.lit("2014-01-01")) &
         (F.col("Date_établissement_DPE") < F.lit("2024-01-01")) &
         (F.col("Année_construction") < 2024) &
-        (F.col("Année_construction") > 1700)
+        (F.col("Année_construction") > 1700) &
+        (F.col('Emission_GES_5_usages_par_m²') < 200) &
+        (F.col('Conso_5_usages/m²_é_finale') < 700)
     )
     .withColumns({ # rename columns and modify them according to documentation
         'id_dpe' : F.col('N°DPE'),
@@ -149,32 +150,29 @@ dpe = (
                     .otherwise(6)
             )
         ),
-        'heating_emission' : (
-            F.when(
-                (
-                    F.col('Type_émetteur_installation_chauffage_n°1').contains('électrique') |
-                    F.col('Type_émetteur_installation_chauffage_n°1').contains('rayonnant') |
-                    F.col('Type_émetteur_installation_chauffage_n°1').contains('bi-jonction') |
-                    F.col('Type_émetteur_installation_chauffage_n°1').contains('joule')
-                ),
-                6
-            )
-            .when(F.col('Type_émetteur_installation_chauffage_n°1').contains('gaz'), 1)
-            .when(F.col('Type_émetteur_installation_chauffage_n°1').contains('Poêle'), 2)
-            .when(
-                (
-                    F.col('Type_émetteur_installation_chauffage_n°1').contains('thermostatique') |
-                    F.col('Type_émetteur_installation_chauffage_n°1').contains('chauffant sur réseau')
-                ),
-                3
-            )
-            .when(F.col('Type_émetteur_installation_chauffage_n°1').contains('Soufflage'), 5)
-            .when(F.col('Type_émetteur_installation_chauffage_n°1').contains('Autres équipements'), 4)
+        'surface' : (
+            F.when(F.col('Surface_habitable_logement') < 70, 1)
+            .when((F.col('Surface_habitable_logement') >= 70) & (F.col('Surface_habitable_logement') < 115), 2)
+            .when(F.col('Surface_habitable_logement') >= 115, 3)
         ),
-        'surface' : F.col('Surface_habitable_logement'),
-        'DPE_consumption' : F.col('Conso_5_usages_é_finale'),
-        'GES_emission' : F.col('Emission_GES_5_usages'),
-        'has_to_renov' : F.lit(None).cast('string')
+        'DPE_consumption' : (
+                F.when(F.col('Conso_5_usages/m²_é_finale') <= 50, 0)
+                .when((F.col('Conso_5_usages/m²_é_finale') > 50) & (F.col('Conso_5_usages/m²_é_finale') <= 90), 1)
+                .when((F.col('Conso_5_usages/m²_é_finale') > 90) & (F.col('Conso_5_usages/m²_é_finale') <= 150), 2)
+                .when((F.col('Conso_5_usages/m²_é_finale') > 150) & (F.col('Conso_5_usages/m²_é_finale') <= 230), 3)
+                .when((F.col('Conso_5_usages/m²_é_finale') > 230) & (F.col('Conso_5_usages/m²_é_finale') <= 330), 4)
+                .when((F.col('Conso_5_usages/m²_é_finale') > 330) & (F.col('Conso_5_usages/m²_é_finale') <= 450), 5)
+                .otherwise(6)
+        ),
+        'GES_emission': (
+            F.when(F.col('Emission_GES_5_usages_par_m²') <= 5, 0)
+            .when((F.col('Emission_GES_5_usages_par_m²') > 5) & (F.col('Emission_GES_5_usages_par_m²') <= 10), 1)
+            .when((F.col('Emission_GES_5_usages_par_m²') > 10) & (F.col('Emission_GES_5_usages_par_m²') <= 20), 2)
+            .when((F.col('Emission_GES_5_usages_par_m²') > 20) & (F.col('Emission_GES_5_usages_par_m²') <= 35), 3)
+            .when((F.col('Emission_GES_5_usages_par_m²') > 35) & (F.col('Emission_GES_5_usages_par_m²') <= 55), 4)
+            .when((F.col('Emission_GES_5_usages_par_m²') > 55) & (F.col('Emission_GES_5_usages_par_m²') <= 80), 5)
+            .otherwise(6)
+        )
     })
     .join(
         municipality.select(
@@ -191,13 +189,12 @@ dpe = (
         F.col('type'),
         F.col('construction_date'),
         F.col('heating_system'),
-        F.col('heating_production'),
-        F.col('heating_emission'),
+        F.col('heating_production').cast('int'),
         F.col('hot_water_system'),
         F.col('surface'),
         F.col('DPE_consumption').cast('double'), # is string otherwise
-        F.col('GES_emission'),
-        F.col('has_to_renov')
+        F.col('GES_emission').cast('double'),
+        F.lit(None).cast('string').alias('has_to_renov')
     )
 )
 
