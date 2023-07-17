@@ -288,3 +288,7 @@ predicted_df.groupBy('has_to_renov').count().show()
 training.write.mode('overwrite')\
         .format("parquet") \
         .saveAsTable("Model.training_renov")
+
+predicted_df.write.mode('overwrite')\
+        .format("parquet") \
+        .saveAsTable("Model.predicted_renov")

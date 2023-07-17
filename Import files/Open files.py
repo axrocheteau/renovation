@@ -34,6 +34,8 @@ spark.sql("CREATE DATABASE IF NOT EXISTS Gold")
 # Create Database store final modifie files
 spark.sql("CREATE DATABASE IF NOT EXISTS Model")
 
+# Create Database store data for BI
+spark.sql("CREATE DATABASE IF NOT EXISTS Bi")
 
 # COMMAND ----------
 
