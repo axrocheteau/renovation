@@ -5,7 +5,7 @@
 # COMMAND ----------
 
 # all db
-dbutils.fs.ls("/user/hive/warehouse/model.db/")
+dbutils.fs.ls("/user/hive/warehouse/bi.db/")
 # all files
 # dbutils.fs.ls("/FileStore/tables")
 
@@ -17,7 +17,7 @@ dbutils.fs.ls("/user/hive/warehouse/model.db/")
 
 # COMMAND ----------
 
-dbutils.fs.rm("/user/hive/warehouse/model.db/training_em/", True)
+dbutils.fs.rm("/user/hive/warehouse/bi.db/department/", True)
 
 # COMMAND ----------
 

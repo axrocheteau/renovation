@@ -23,7 +23,7 @@ spark = SparkSession \
 # load df
 dpe_2021 = spark.sql("SELECT * FROM Datalake.dpe_france_2021")
 predicted_renov = spark.sql("SELECT * FROM Model.predicted_renov")
-municipality = spark.sql("SELECT * FROM Silver.Municipality")
+BI_municipality = spark.sql("SELECT * FROM BI.Municipality")
 
 # COMMAND ----------
 
@@ -41,6 +41,14 @@ def to_categorical(x):
 
 to_categorical_udf = udf(lambda x: to_categorical(x))
 
+def to_renov(x):
+    if x is None or x > 2:
+        return 0
+    else:
+        return 1
+    
+to_renov_udf = udf(lambda x: to_renov(x))
+
 def mean_coalesce(x, y, z):
     if x is None and  y is None and z is None:
         return x
@@ -49,14 +57,36 @@ def mean_coalesce(x, y, z):
 
 mean_coalesce_udf = udf(lambda x, y, z: mean_coalesce(x, y, z))
 
+def to_dictionary(dictionary, x):
+    return dictionary[x]
+
+dpe_ges_dict = {0:'A', 1:'B', 2:'C', 3:'D', 4:'E', 5:'F', 6:'G'}
+heating_prod_dict = {1:'Gaz', 2:'fioul, GPL, propane, butane', 3:' bois, charbon', 4:'Autres', 5:'PAC', 6:'electricité'}
+quality_dict = {1 : 'insuffisante', 2 : 'moyenne', 3 : 'bonne', 4 : 'très bonne'}
+surface_dict = {1 : '<70 m²', 2:'entre 70 et 115 m²', 3:'>115 m²'}
+construction_date_dict = {
+    1 : '1948 ou avant',
+    2 : 'Entre 1949 et 1974',
+    3 : 'Entre 1975 et 1981',
+    4 : 'Entre 1982 et 1989',
+    5 : 'Entre 1990 et 2000',
+    6 : 'Entre 2001 et 2011',
+    7 : '2012 ou après',
+}
+
+def make_expr(column_name, dictionary):
+    return f"""CASE {' '.join([f"WHEN {column_name}='{k}' THEN '{v}'" for k,v in dictionary.items()])} ELSE {column_name} END"""
+
+
+
 # COMMAND ----------
 
 
 dpe = (
     dpe_2021.select(
         F.col("N°DPE").alias('id_dpe'),
-        F.col("Surface_habitable_logement").alias('surface'),
         F.col("Code_INSEE_(BAN)").alias('insee_code'),
+        F.col("Type_bâtiment").alias('type'),
         F.col("Qualité_isolation_enveloppe"),
         F.col("Qualité_isolation_menuiseries"),
         F.col("Qualité_isolation_murs"),
@@ -79,15 +109,13 @@ dpe = (
                 F.col("quality_ceiling_insulation_developed"),
                 F.col("quality_ceiling_insulation_unused")
             )
-        ).cast('float')
+        ).cast('int')
     })
     .join(
         predicted_renov.select(
             F.col('id_dpe'),
-            F.col('type'),
+            F.col('surface'),
             F.col('construction_date'),
-            F.col('heating_system'),
-            F.col('hot_water_system'),
             F.col('heating_production'),
             F.col('DPE_consumption'),
             F.col('GES_emission'),
@@ -96,40 +124,76 @@ dpe = (
         ['id_dpe'],
         'inner'
     )
+    .withColumns({
+        'renov_energy' : (
+            F.when(F.col('heating_production') == 2, 1)
+            .when(
+                (F.col('heating_production') == 1) | (F.col('heating_production') == 3),
+                F.when((F.col('DPE_consumption') >= 4) | (F.col('GES_emission') >= 4), 1)
+                .otherwise(0)
+            )
+            .otherwise(0)
+        ),
+        'heating_production' : F.expr(make_expr('heating_production', heating_prod_dict)),
+        'DPE_consumption' : F.expr(make_expr('DPE_consumption', dpe_ges_dict)),
+        'GES_emission' : F.expr(make_expr('GES_emission', dpe_ges_dict)),
+        'surface' : F.expr(make_expr('surface', surface_dict)),
+        'construction_date' : F.expr(make_expr('construction_date', construction_date_dict)),
+        'renov_shell' : to_renov_udf(F.col('quality_shell_insulation')),
+        'renov_walls' : to_renov_udf(F.col('quality_walls_insulation')),
+        'renov_carpentry' : to_renov_udf(F.col('quality_carpentry_insulation')),
+        'renov_flooring' : to_renov_udf(F.col('quality_flooring_insulation')),
+        'renov_ceiling' : to_renov_udf(F.col('quality_ceiling_insulation')),
+    })
+    .join(
+        BI_municipality.select(
+            F.col('insee_code'),
+            F.col('id_municipality')
+        ),
+        ['insee_code'],
+        'inner'
+    )
     .select(
-        F.col('id_dpe'),
+        F.col('id_municipality'),
         F.col('type'),
         F.col('construction_date'),
-        F.col('heating_system'),
-        F.col('hot_water_system'),
         F.col('heating_production'),
+        F.col('surface'),
         F.col('DPE_consumption'),
         F.col('GES_emission'),
         F.col('has_to_renov'),
-        F.col('insee_code'),
-        F.col('surface'),
-        F.col('quality_shell_insulation'),
-        F.col('quality_walls_insulation'),
-        F.col('quality_carpentry_insulation'),
-        F.col('quality_flooring_insulation'),
-        F.col('quality_ceiling_insulation')
-
+        F.col('renov_energy'),
+        F.col('renov_shell'),
+        F.col('renov_walls'),
+        F.col('renov_carpentry'),
+        F.col('renov_flooring'),
+        F.col('renov_ceiling'),
+        F.col('renov_energy')
     )
+    .groupBy(
+        F.col('id_municipality'),
+        F.col('type'),
+        F.col('construction_date'),
+        F.col('heating_production'),
+        F.col('surface'),
+        F.col('DPE_consumption'),
+        F.col('GES_emission'),
+        F.col('renov_energy'),
+        F.col('has_to_renov'),
+        F.col('renov_shell'),
+        F.col('renov_walls'),
+        F.col('renov_carpentry'),
+        F.col('renov_flooring'),
+        F.col('renov_ceiling')
+    )
+    .count()
+    .dropDuplicates()
 )
-
-print(f'{dpe_2021.count() = }, {dpe.count() = }')
+print(f'{dpe.count() = }, {dpe_2021.count()}')
 display(dpe)
-
-# COMMAND ----------
-
-print(dpe.dtypes)
-
-# COMMAND ----------
-
-dpe.select('Qualité_isolation_plancher_bas').dropDuplicates().show()
 
 # COMMAND ----------
 
 dpe.write.mode('overwrite')\
         .format("parquet") \
-        .saveAsTable("Gold.DPE")
+        .saveAsTable("BI.dpe")

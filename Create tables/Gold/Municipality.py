@@ -44,6 +44,7 @@ municipality = (
     )
 )
 
+
 # COMMAND ----------
 
 municipality.write.mode('overwrite')\

@@ -60,7 +60,8 @@ info_array = [
     {"location" : "/FileStore/tables/dpe_france_2021", "name": "dpe_france_2021", "delimiter": ","},
     {"location" : "/FileStore/tables/permis_amenager.csv", "name": "development_licence", "delimiter": ";"},
     {"location" : "/FileStore/tables/permis_demolir.csv", "name": "destruction_licence", "delimiter": ";"},
-    {"location" : "/FileStore/tables/dep_limitrophe.csv", "name": "neighbouring_dep", "delimiter": ";"}
+    {"location" : "/FileStore/tables/dep_limitrophe.csv", "name": "neighbouring_dep", "delimiter": ";"},
+    {"location" : "/FileStore/tables/logements.csv", "name": "housings", "delimiter": ";"}
 ]         
 
 file_type = "csv"
@@ -89,9 +90,9 @@ for file in info_array:
 # COMMAND ----------
 
 # to recreate only one specific table
-file_location = "/FileStore/tables/dep_limitrophe.csv"
+file_location = "/FileStore/tables/logements.csv"
 file_type = "csv"
-name = "neighbouring_dep"
+name = "housings"
 
 # CSV options
 infer_schema = "true"
