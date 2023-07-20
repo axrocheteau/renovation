@@ -139,11 +139,11 @@ dpe = (
         'GES_emission' : F.expr(make_expr('GES_emission', dpe_ges_dict)),
         'surface' : F.expr(make_expr('surface', surface_dict)),
         'construction_date' : F.expr(make_expr('construction_date', construction_date_dict)),
-        'renov_shell' : to_renov_udf(F.col('quality_shell_insulation')),
-        'renov_walls' : to_renov_udf(F.col('quality_walls_insulation')),
-        'renov_carpentry' : to_renov_udf(F.col('quality_carpentry_insulation')),
-        'renov_flooring' : to_renov_udf(F.col('quality_flooring_insulation')),
-        'renov_ceiling' : to_renov_udf(F.col('quality_ceiling_insulation')),
+        'renov_shell' : to_renov_udf(F.col('quality_shell_insulation')).cast('int'),
+        'renov_walls' : to_renov_udf(F.col('quality_walls_insulation')).cast('int'),
+        'renov_carpentry' : to_renov_udf(F.col('quality_carpentry_insulation')).cast('int'),
+        'renov_flooring' : to_renov_udf(F.col('quality_flooring_insulation')).cast('int'),
+        'renov_ceiling' : to_renov_udf(F.col('quality_ceiling_insulation')).cast('int'),
     })
     .join(
         BI_municipality.select(
@@ -153,7 +153,44 @@ dpe = (
         ['insee_code'],
         'inner'
     )
+)
+
+
+# COMMAND ----------
+
+stack_expr = "stack(5, 'murs', renov_walls, 'toiture', renov_carpentry, 'plancher', renov_flooring, 'plafond', renov_ceiling, 'énergie', renov_energy) AS (renov_type, renov)"
+renov = (
+    dpe.select(
+        F.col('id_dpe'),
+        F.col('id_municipality'),
+        F.expr(stack_expr)
+    )
+    .filter(
+        F.col('renov') == 1
+    )
     .select(
+        F.col('id_dpe'),
+        F.col('id_municipality'),
+        F.col('renov_type')
+    )
+)
+
+
+# COMMAND ----------
+
+print(renov.count())
+display(renov)
+
+# COMMAND ----------
+
+renov.write.mode('overwrite')\
+        .format("parquet") \
+        .saveAsTable("BI.Renovation")
+
+# COMMAND ----------
+
+dpe = (
+    dpe.select(
         F.col('id_municipality'),
         F.col('type'),
         F.col('construction_date'),
@@ -162,13 +199,6 @@ dpe = (
         F.col('DPE_consumption'),
         F.col('GES_emission'),
         F.col('has_to_renov'),
-        F.col('renov_energy'),
-        F.col('renov_shell'),
-        F.col('renov_walls'),
-        F.col('renov_carpentry'),
-        F.col('renov_flooring'),
-        F.col('renov_ceiling'),
-        F.col('renov_energy')
     )
     .groupBy(
         F.col('id_municipality'),
@@ -178,19 +208,10 @@ dpe = (
         F.col('surface'),
         F.col('DPE_consumption'),
         F.col('GES_emission'),
-        F.col('renov_energy'),
         F.col('has_to_renov'),
-        F.col('renov_shell'),
-        F.col('renov_walls'),
-        F.col('renov_carpentry'),
-        F.col('renov_flooring'),
-        F.col('renov_ceiling')
     )
     .count()
-    .dropDuplicates()
 )
-print(f'{dpe.count() = }, {dpe_2021.count()}')
-display(dpe)
 
 # COMMAND ----------
 
