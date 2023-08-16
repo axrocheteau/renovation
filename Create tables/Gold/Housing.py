@@ -345,8 +345,7 @@ y_pred_prod = models[0].predict(X) + 1
 
 # COMMAND ----------
 
-from pyspark.sql.types import IntegerType, Row
-from pyspark.sql.types import StructType, StructField, StringType, IntegerType
+from pyspark.sql.types import StructType, StructField, IntegerType, Row
 
 data = [(id_owner, surf, prod) for id_owner, surf, prod in zip(predicting_surf_prod[:,0].tolist(), y_pred_surf.tolist(), y_pred_prod.tolist())]
 schema = StructType([ 
@@ -355,77 +354,41 @@ schema = StructType([
     StructField("pred_prod",IntegerType(),True),
   ])
 rowData = map(lambda x: Row(*x), data) 
-dfFromData3 = spark.createDataFrame(data=rowData, schema=schema)
-display(dfFromData3)
+pred_surf_prod = spark.createDataFrame(data=rowData, schema=schema)
+display(pred_surf_prod)
 
 # COMMAND ----------
 
-def predict_surface(occupation, department, *features):
-    X_hot = encoders['surface'].transform(np.array([[occupation, department]]))
-    X_not_hot = np.array([features])
-    X = np.column_stack((X_not_hot, X_hot))
-    return int(models[1].predict(X)[0]) + 1
-
-udf_surf = F.udf(lambda occupation, department, *features : predict_surface(occupation, department, *features), IntegerType())
-
-def predict_prod(occupation, department, *features):
-    X_hot = encoders['heating_production'].transform(np.array([[occupation, department]]))
-    X_not_hot = np.array([features])
-    X = np.column_stack((X_not_hot, X_hot))
-    return int(models[0].predict(X)[0]) + 1
-
-udf_prod = F.udf(lambda occupation, department, *features : predict_prod(occupation, department, *features), IntegerType())
 
 completed = (
-    training_tremi.withColumns({
+    training_tremi.join(
+        pred_surf_prod,
+        ['id_owner'],
+        'inner'
+    )  
+    .withColumns({
         'surface': (
             F.when(
                 F.col('surface').isNull(), 
-                udf_surf(
-                    F.col('occupation'),
-                    F.col('department_number'),
-                    F.col('gender'),
-                    F.col('age'),
-                    F.col('home_state'),
-                    F.col('nb_persons_home'),
-                    F.col('income'),
-                    F.col('type'),
-                    F.col('construction_date'),
-                    F.col('heating_system'),
-                    F.col('population'),
-                    F.col('n_development_licence'),
-                    F.col('n_construction_licence'),
-                    F.col('n_new_buildings'),
-                    F.col('n_destruction_licence')
-                )    
+                F.col('pred_surface')
             )
             .otherwise(F.col('surface'))
         ),
         'heating_production': (
             F.when(
                 F.col('heating_production').isNull(), 
-                udf_prod(
-                    F.col('occupation'),
-                    F.col('department_number'),
-                    F.col('gender'),
-                    F.col('age'),
-                    F.col('home_state'),
-                    F.col('nb_persons_home'),
-                    F.col('income'),
-                    F.col('type'),
-                    F.col('construction_date'),
-                    F.col('heating_system'),
-                    F.col('population'),
-                    F.col('n_development_licence'),
-                    F.col('n_construction_licence'),
-                    F.col('n_new_buildings'),
-                    F.col('n_destruction_licence'),
-                )
+                F.col('pred_prod')
             )
             .otherwise(F.col('heating_production'))
         )
     })
+    .drop(
+        F.col('pred_surface'),
+        F.col('pred_prod') 
+    )
 )
+print(completed.count())
+display(completed)
 
 # COMMAND ----------
 
@@ -466,8 +429,9 @@ from pyspark.sql.types import IntegerType
 
 # COMMAND ----------
 
-predicting = np.array(
+predicting_dpe_ges = np.array(
     housing_final.select(
+        F.col('id_owner'),
         F.col('heating_production'),
         F.col('type'),
         F.col('construction_date'),
@@ -476,9 +440,10 @@ predicting = np.array(
     ).collect()
 )
 
-X_hot = encoders['DPE_consumption'].transform(predicting[:,0])
-X_not_hot = predicting[:,1:]
+X_hot = encoders['DPE_consumption'].transform(predicting_dpe_ges[:,1].reshape(-1, 1))
+X_not_hot = predicting_dpe_ges[:,2:]
 X = np.column_stack((X_not_hot, X_hot))
+print(X.shape)
 y_pred_dpe = models[2].predict(X)
 y_pred_ges = models[3].predict(X)
 print(y_pred_dpe.shape, y_pred_ges.shape)
@@ -486,57 +451,39 @@ print(y_pred_dpe.shape, y_pred_ges.shape)
 
 # COMMAND ----------
 
-def predict_dpe(heating, *features):
-    X_hot = encoders['DPE_consumption'].transform(np.array([[heating]]))
-    X_not_hot = np.array([features])
-    X = np.column_stack((X_not_hot, X_hot))
-    return int(models[2].predict(X))
-
-udf_dpe = F.udf(lambda heating, *features : predict_dpe(heating, *features), IntegerType())
-
-def predict_ges(heating, *features):
-    X_hot = encoders['GES_emission'].transform(np.array([[heating]]))
-    X_not_hot = np.array([features])
-    X = np.column_stack((X_not_hot, X_hot))
-    return int(models[3].predict(X))
-
-udf_ges = F.udf(lambda heating, *features : predict_ges(heating, *features), IntegerType())
-
-housing_completed = (
-    housing_final
-    .withColumns({
-        'DPE_consumption': (
-            udf_dpe(
-                F.col('heating_production'),
-                F.col('type'),
-                F.col('construction_date'),
-                F.col('heating_system'),
-                F.col('hot_water_system')  
-            )
-        ),
-        'GES_emission': (
-            udf_ges(
-                F.col('heating_production'),
-                F.col('type'),
-                F.col('construction_date'),
-                F.col('heating_system'),
-                F.col('hot_water_system')  
-            )
-        ),
-    })
-)
+data = [(id_owner, int(dpe), int(ges)) for id_owner, dpe, ges in zip(predicting_dpe_ges[:,0].tolist(), y_pred_dpe.tolist(), y_pred_ges.tolist())]
+schema = StructType([ 
+    StructField("id_owner",IntegerType(),True),
+    StructField("pred_dpe",IntegerType(),True),
+    StructField("pred_ges",IntegerType(),True),
+  ])
+rowData = map(lambda x: Row(*x), data) 
+pred_dpe_ges = spark.createDataFrame(data=rowData, schema=schema)
+display(pred_dpe_ges)
 
 # COMMAND ----------
 
-
+housing_completed = (
+    housing_final.join(
+        pred_dpe_ges,
+        ['id_owner'],
+        'inner'
+    )
+    .withColumns({
+        'DPE_consumption': F.col('pred_dpe'),
+        'GES_emission': F.col('pred_ges'),
+    })
+    .drop(
+        F.col('pred_dpe'),
+        F.col('pred_ges')
+    )
+    .dropDuplicates()
+)
+print(housing_completed.count())
+display(housing_completed)
 
 # COMMAND ----------
 
 housing_completed.write.mode('overwrite')\
         .format("parquet") \
         .saveAsTable("Gold.Housing")
-
-# COMMAND ----------
-
-housing_completed.show()
-housing_completed_2 = spark.sql("SELECT * FROM Gold.Housing")
