@@ -56,5 +56,5 @@ display(training)
 
 training.write.mode('overwrite')\
         .format("parquet") \
-        .saveAsTable("Model.training_dpe")
+        .saveAsTable("Model.training_dpe_cat")
 

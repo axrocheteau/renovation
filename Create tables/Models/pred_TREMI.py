@@ -88,6 +88,8 @@ training_prod = training_tremi.filter(F.col('heating_production').isNotNull()).d
 predicting_prod = training_tremi.filter(F.col('heating_production').isNull()).drop('surface')
 
 
+
+
 # COMMAND ----------
 
 # librairies
@@ -104,37 +106,20 @@ from sklearn.ensemble import HistGradientBoostingClassifier
 
 # COMMAND ----------
 
-def preprocess(df):
-    np_df = df.toPandas().to_numpy()
-    X = np_df[:,:-1]
-    X = StandardScaler().fit_transform(X)
-    y = np_df[:,-1].ravel().astype(int)
-    if 0 not in np.unique(y):
-        y = y - 1
-    return (X, y)
-
-X, y = preprocess(training_surf)
-print(X.shape, y.shape)
-
-# COMMAND ----------
-
-# param_surf = {'class_weight': 'balanced', 'max_depth': 15, 'n_estimators': 171}
-# param_prod = {'class_weight': 'balanced', 'max_depth': 19, 'n_estimators': 171}
-# param_em = {'class_weight': 'balanced', 'max_depth': 16, 'n_estimators': 159}
-
-# model_surf = RandomForestClassifier(**param_surf).fit(*preprocess(training_surf))
-# model_prod = RandomForestClassifier(**param_prod).fit(*preprocess(training_prod))
-# model_em = RandomForestClassifier(**param_em).fit(*preprocess(training_em))
-
-
-# COMMAND ----------
-
 trainings = [
     {'dataset' : training_surf, 'name' : 'training_surf'},
     {'dataset' : training_prod, 'name' : 'training_prod'}
+]
+predictings = [
+    {'dataset' : predicting_surf, 'name' : 'predicting_surf'},
+    {'dataset' : predicting_prod, 'name' : 'predicting_prod'}
 ]
 
 for training in trainings:
     training['dataset'].write.mode('overwrite')\
             .format("parquet")\
             .saveAsTable(f"Model.{training['name']}")
+for predicting in predictings:
+    predicting['dataset'].write.mode('overwrite')\
+            .format("parquet")\
+            .saveAsTable(f"Model.{predicting['name']}")

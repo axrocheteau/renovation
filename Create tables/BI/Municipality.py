@@ -21,7 +21,6 @@ spark = SparkSession \
 
 # load df
 silver_municipality = spark.sql("SELECT * FROM Silver.Municipality")
-department = spark.sql("SELECT * FROM BI.Department")
 housings = spark.sql("SELECT * FROM Datalake.housings")
 
 # COMMAND ----------
@@ -65,7 +64,6 @@ municipality = (
 
 
 print(municipality.count())
-municipality.agg({'id_municipality':'max'}).show()
 display(municipality)
 
 # COMMAND ----------
