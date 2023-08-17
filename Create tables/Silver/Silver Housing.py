@@ -1,12 +1,13 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Housing
+# MAGIC # Silver Housing
 
 # COMMAND ----------
 
 from os.path import abspath
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
+import numpy as np
 
 # spark session to warehouse
 warehouse_location = abspath('spark-warehouse')
@@ -88,7 +89,15 @@ housing = (
             .when(F.col('surface') >= 115, 3)
         ),
         'first_date_renov' : (
-            F.when(F.col('has_done_renov') == 1, 2014)
+            F.when(F.col('has_done_renov') == 1,
+                F.array(
+                    F.lit(2014),
+                    F.lit(2015),
+                    F.lit(2016),
+                ).getItem(
+                    (F.rand()*3).cast("int")
+                )
+            )
             .otherwise(
                 F.col('first_date_renov') + 2013
             )

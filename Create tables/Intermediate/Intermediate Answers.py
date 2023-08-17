@@ -1,6 +1,6 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Create Answers
+# MAGIC # Intermediate Answers
 
 # COMMAND ----------
 

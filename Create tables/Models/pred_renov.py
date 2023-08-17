@@ -100,6 +100,14 @@ training = (
         ),
         'inner'
     )
+    # .withColumns({
+    #     'humidity_0_1' : F.round(F.col('humidity_1') - F.col('humidity_0'),2),
+    #     'humidity_1_2' : F.round(F.col('humidity_2') - F.col('humidity_1'),2),
+    #     'temp_degree_0_1' : F.round(F.col('temp_degree_1') - F.col('temp_degree_0'),2),
+    #     'temp_degree_1_2' : F.round(F.col('temp_degree_2') - F.col('temp_degree_1'),2),
+    #     'wind_speed_0_1' : F.round(F.col('wind_speed_1') - F.col('wind_speed_0'),2),
+    #     'wind_speed_1_2' : F.round(F.col('wind_speed_2') - F.col('wind_speed_1'),2),
+    # })
     .select(
         F.col('type'),
         F.col('construction_date'),
@@ -118,6 +126,12 @@ training = (
         F.col('humidity_2'),
         F.col('wind_speed_2'),
         F.col('temp_degree_2'),
+        # F.col('humidity_0_1'),
+        # F.col('humidity_1_2'),
+        # F.col('temp_degree_0_1'),
+        # F.col('temp_degree_1_2'),
+        # F.col('wind_speed_0_1'),
+        # F.col('wind_speed_1_2'),
         F.col('population'),
         F.col('n_development_licence'),
         F.col('n_construction_licence'),
@@ -212,8 +226,8 @@ prediction = (
         F.col('heating_system'),
         F.col('hot_water_system'),
         F.col('heating_production'),
-        F.col('DPE_consumption'),
-        F.col('GES_emission'),
+        F.col('DPE_consumption').cast('int'),
+        F.col('GES_emission').cast('int'),
         F.col('humidity_0'),
         F.col('wind_speed_0'),
         F.col('temp_degree_0'),
@@ -261,15 +275,12 @@ predicted_df = (
                 'heating_production',
                 'DPE_consumption',
                 'GES_emission',
-                'humidity_0',
-                'wind_speed_0',
-                'temp_degree_0',
-                'humidity_1',
-                'wind_speed_1',
-                'temp_degree_1',
-                'humidity_2',
-                'wind_speed_2',
-                'temp_degree_2',
+                'humidity_0_1',
+                'wind_speed_0_1',
+                'temp_degree_0_1',
+                'humidity_1_2',
+                'wind_speed_1_2',
+                'temp_degree_1_2',
                 'population',
                 'n_development_licence',
                 'n_construction_licence',
@@ -287,8 +298,8 @@ predicted_df.groupBy('has_to_renov').count().show()
 
 training.write.mode('overwrite')\
         .format("parquet") \
-        .saveAsTable("Model.training_renov")
+        .saveAsTable("Model.training_renov_no_diff")
 
-predicted_df.write.mode('overwrite')\
-        .format("parquet") \
-        .saveAsTable("Model.predicted_renov")
+# predicted_df.write.mode('overwrite')\
+#         .format("parquet") \
+#         .saveAsTable("Model.predicted_renov")

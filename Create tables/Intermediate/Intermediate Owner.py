@@ -1,6 +1,6 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Create Owner
+# MAGIC # Intermediate Owner
 
 # COMMAND ----------
 

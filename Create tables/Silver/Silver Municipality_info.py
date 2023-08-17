@@ -1,6 +1,6 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Municipality info
+# MAGIC # Silver Municipality info
 
 # COMMAND ----------
 
