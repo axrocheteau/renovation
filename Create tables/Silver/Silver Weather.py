@@ -98,5 +98,5 @@ display(weather.orderBy("year","department_number"))
 # save as table
 weather.write.mode('overwrite')\
         .format("parquet") \
-        .saveAsTable("Gold.Weather")
+        .saveAsTable("Silver.Weather")
 

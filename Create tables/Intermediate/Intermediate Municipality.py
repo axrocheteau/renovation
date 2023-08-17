@@ -211,4 +211,4 @@ df_municipality = df_municipality.select(
 # save as table
 df_municipality.write.mode('overwrite')\
         .format("parquet") \
-        .saveAsTable("Silver.Municipality")
+        .saveAsTable("Intermediate.Municipality")

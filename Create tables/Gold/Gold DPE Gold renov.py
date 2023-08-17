@@ -23,7 +23,7 @@ spark = SparkSession \
 # load df
 dpe_2021 = spark.sql("SELECT * FROM Datalake.dpe_france_2021")
 predicted_renov = spark.sql("SELECT * FROM Model.predicted_renov")
-BI_municipality = spark.sql("SELECT * FROM BI.Municipality")
+gold_municipality = spark.sql("SELECT * FROM Gold.Municipality")
 
 # COMMAND ----------
 
@@ -146,7 +146,7 @@ dpe = (
         'renov_ceiling' : to_renov_udf(F.col('quality_ceiling_insulation')).cast('int'),
     })
     .join(
-        BI_municipality.select(
+        gold_municipality.select(
             F.col('insee_code'),
             F.col('id_municipality')
         ),
@@ -185,7 +185,7 @@ display(renov)
 
 renov.write.mode('overwrite')\
         .format("parquet") \
-        .saveAsTable("BI.Renovation")
+        .saveAsTable("Gold.Renovation")
 
 # COMMAND ----------
 
@@ -217,4 +217,4 @@ dpe = (
 
 dpe.write.mode('overwrite')\
         .format("parquet") \
-        .saveAsTable("BI.dpe")
+        .saveAsTable("Gold.dpe")

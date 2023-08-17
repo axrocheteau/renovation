@@ -56,4 +56,4 @@ display(housing)
 # save as table
 housing.write.mode('overwrite')\
         .format("parquet") \
-        .saveAsTable("Silver.Housing")
+        .saveAsTable("Intermediate.Housing")

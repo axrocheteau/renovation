@@ -20,13 +20,13 @@ spark = SparkSession \
 # COMMAND ----------
 
 # load df
-silver_municipality = spark.sql("SELECT * FROM Silver.Municipality")
+intermediate_municipality = spark.sql("SELECT * FROM Intermediate.Municipality")
 housings = spark.sql("SELECT * FROM Datalake.housings")
 
 # COMMAND ----------
 
 municipality = (
-    silver_municipality.select(
+    intermediate_municipality.select(
         F.col('department_number'),
         F.col('department_name'),
         F.col('new_region_name'),
@@ -70,4 +70,4 @@ display(municipality)
 
 municipality.write.mode('overwrite')\
         .format("parquet") \
-        .saveAsTable("BI.Municipality")
+        .saveAsTable("Gold.Municipality")

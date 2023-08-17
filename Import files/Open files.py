@@ -26,16 +26,16 @@ spark = SparkSession \
 spark.sql("CREATE DATABASE IF NOT EXISTS Datalake")
 
 # Create Database store modified files
-spark.sql("CREATE DATABASE IF NOT EXISTS Silver")
+spark.sql("CREATE DATABASE IF NOT EXISTS Intermediate")
 
 # Create Database store final modifie files
-spark.sql("CREATE DATABASE IF NOT EXISTS Gold")
+spark.sql("CREATE DATABASE IF NOT EXISTS Silver")
 
 # Create Database store final modifie files
 spark.sql("CREATE DATABASE IF NOT EXISTS Model")
 
 # Create Database store data for BI
-spark.sql("CREATE DATABASE IF NOT EXISTS Bi")
+spark.sql("CREATE DATABASE IF NOT EXISTS Gold")
 
 # COMMAND ----------
 

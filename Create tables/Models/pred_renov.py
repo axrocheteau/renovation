@@ -21,11 +21,11 @@ spark = SparkSession \
 # COMMAND ----------
 
 # load df
-dpe = spark.sql("SELECT * FROM Gold.dpe")
-housing = spark.sql("SELECT * FROM Gold.Housing")
-weather = spark.sql("SELECT * FROM Gold.Weather")
-municipality = spark.sql("SELECT * FROM Gold.Municipality")
-municipality_info = spark.sql("SELECT * FROM Gold.Municipality_info")
+dpe = spark.sql("SELECT * FROM Silver.dpe")
+housing = spark.sql("SELECT * FROM Silver.Housing")
+weather = spark.sql("SELECT * FROM Silver.Weather")
+municipality = spark.sql("SELECT * FROM Silver.Municipality")
+municipality_info = spark.sql("SELECT * FROM Silver.Municipality_info")
 
 
 # COMMAND ----------
@@ -100,14 +100,6 @@ training = (
         ),
         'inner'
     )
-    # .withColumns({
-    #     'humidity_0_1' : F.round(F.col('humidity_1') - F.col('humidity_0'),2),
-    #     'humidity_1_2' : F.round(F.col('humidity_2') - F.col('humidity_1'),2),
-    #     'temp_degree_0_1' : F.round(F.col('temp_degree_1') - F.col('temp_degree_0'),2),
-    #     'temp_degree_1_2' : F.round(F.col('temp_degree_2') - F.col('temp_degree_1'),2),
-    #     'wind_speed_0_1' : F.round(F.col('wind_speed_1') - F.col('wind_speed_0'),2),
-    #     'wind_speed_1_2' : F.round(F.col('wind_speed_2') - F.col('wind_speed_1'),2),
-    # })
     .select(
         F.col('type'),
         F.col('construction_date'),
@@ -126,12 +118,6 @@ training = (
         F.col('humidity_2'),
         F.col('wind_speed_2'),
         F.col('temp_degree_2'),
-        # F.col('humidity_0_1'),
-        # F.col('humidity_1_2'),
-        # F.col('temp_degree_0_1'),
-        # F.col('temp_degree_1_2'),
-        # F.col('wind_speed_0_1'),
-        # F.col('wind_speed_1_2'),
         F.col('population'),
         F.col('n_development_licence'),
         F.col('n_construction_licence'),
@@ -300,6 +286,6 @@ training.write.mode('overwrite')\
         .format("parquet") \
         .saveAsTable("Model.training_renov_no_diff")
 
-# predicted_df.write.mode('overwrite')\
-#         .format("parquet") \
-#         .saveAsTable("Model.predicted_renov")
+predicted_df.write.mode('overwrite')\
+        .format("parquet") \
+        .saveAsTable("Model.predicted_renov")

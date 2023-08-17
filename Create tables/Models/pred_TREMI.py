@@ -21,10 +21,10 @@ spark = SparkSession \
 # COMMAND ----------
 
 # load df
-owner = spark.sql("SELECT * FROM Gold.Owner")
-housing = spark.sql("SELECT * FROM Gold.Housing")
-municipality = spark.sql("SELECT * FROM Gold.Municipality")
-municipality_info = spark.sql("SELECT * FROM Gold.Municipality_info")
+owner = spark.sql("SELECT * FROM Silver.Owner")
+housing = spark.sql("SELECT * FROM Silver.Housing")
+municipality = spark.sql("SELECT * FROM Silver.Municipality")
+municipality_info = spark.sql("SELECT * FROM Silver.Municipality_info")
 
 # COMMAND ----------
 

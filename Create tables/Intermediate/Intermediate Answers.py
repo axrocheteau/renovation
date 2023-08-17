@@ -49,4 +49,4 @@ display(answer)
 # save as table
 answer.write.mode('overwrite')\
         .format("parquet") \
-        .saveAsTable("Silver.Answer")
+        .saveAsTable("Intermediate.Answer")

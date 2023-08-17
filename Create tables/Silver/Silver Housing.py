@@ -7,6 +7,7 @@
 from os.path import abspath
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
+from pyspark.sql.types import StructType, StructField, IntegerType, Row
 import numpy as np
 
 # spark session to warehouse
@@ -21,16 +22,20 @@ spark = SparkSession \
 # COMMAND ----------
 
 # load df
-housing_silver = spark.sql("SELECT * FROM Silver.Housing")
-owner_silver = spark.sql("SELECT * FROM Silver.Owner")
-renovation = spark.sql("SELECT * FROM Silver.Renovation")
-municipality = spark.sql("SELECT * FROM Gold.Municipality")
+housing_intermediate = spark.sql("SELECT * FROM Intermediate.Housing")
+owner_intermediate = spark.sql("SELECT * FROM Intermediate.Owner")
+renovation = spark.sql("SELECT * FROM Intermediate.Renovation")
+municipality = spark.sql("SELECT * FROM Silver.Municipality")
+dpe = spark.sql("SELECT * FROM Silver.DPE")
+owner = spark.sql("SELECT * FROM Silver.Owner")
+municipality = spark.sql("SELECT * FROM Silver.Municipality")
+municipality_info = spark.sql("SELECT * FROM Silver.Municipality_info")
 
 
 # COMMAND ----------
 
 housing = (
-    housing_silver.join(
+    housing_intermediate.join(
         renovation.select(
             F.col('id_owner'),
             F.col('start_date')
@@ -41,7 +46,7 @@ housing = (
         'left_outer'
     )
     .join(
-        owner_silver.filter( # select owners who responded to every question necessary
+        owner_intermediate.filter( # select owners who responded to every question necessary
             (F.col('nb_persons_home') != 99) & 
             (F.col('nb_persons_home').isNotNull()) &
             (F.col('age').isNotNull()) &
@@ -155,7 +160,6 @@ surf_histgb = HistGradientBoostingClassifier(**param_surf_histgb)
 
 # COMMAND ----------
 
-dpe = spark.sql("SELECT * FROM Gold.DPE")
 training_dpe_ges = (
     dpe.select(
         F.col('type'),
@@ -262,12 +266,6 @@ for model, training, target, col_hot, col_not_hot, ax in zip (models, trainings,
 
 # COMMAND ----------
 
-owner = spark.sql("SELECT * FROM Gold.Owner")
-municipality = spark.sql("SELECT * FROM Gold.Municipality")
-municipality_info = spark.sql("SELECT * FROM Gold.Municipality_info")
-
-# COMMAND ----------
-
 training_tremi = (
     owner.join(
         housing.select(
@@ -354,7 +352,7 @@ y_pred_prod = models[0].predict(X) + 1
 
 # COMMAND ----------
 
-from pyspark.sql.types import StructType, StructField, IntegerType, Row
+
 
 data = [(id_owner, surf, prod) for id_owner, surf, prod in zip(predicting_surf_prod[:,0].tolist(), y_pred_surf.tolist(), y_pred_prod.tolist())]
 schema = StructType([ 
@@ -434,10 +432,6 @@ housing_final = (
 
 # COMMAND ----------
 
-from pyspark.sql.types import IntegerType
-
-# COMMAND ----------
-
 predicting_dpe_ges = np.array(
     housing_final.select(
         F.col('id_owner'),
@@ -495,4 +489,4 @@ display(housing_completed)
 
 housing_completed.write.mode('overwrite')\
         .format("parquet") \
-        .saveAsTable("Gold.Housing")
+        .saveAsTable("Silver.Housing")

@@ -21,8 +21,8 @@ spark = SparkSession \
 # COMMAND ----------
 
 # load df
-dpe = spark.sql("SELECT * FROM Gold.DPE")
-housing = spark.sql("SELECT * FROM Gold.Housing")
+dpe = spark.sql("SELECT * FROM Silver.DPE")
+housing = spark.sql("SELECT * FROM Silver.Housing")
 
 # COMMAND ----------
 
