@@ -28,7 +28,6 @@ renovation = spark.sql("SELECT * FROM Intermediate.Renovation")
 municipality = spark.sql("SELECT * FROM Silver.Municipality")
 dpe = spark.sql("SELECT * FROM Silver.DPE")
 owner = spark.sql("SELECT * FROM Silver.Owner")
-municipality = spark.sql("SELECT * FROM Silver.Municipality")
 municipality_info = spark.sql("SELECT * FROM Silver.Municipality_info")
 
 
@@ -145,124 +144,14 @@ import numpy as np
 
 param_dpe_RF = {'class_weight': 'balanced', 'max_depth': 39, 'n_estimators': 112}
 param_ges_RF = {'class_weight': 'balanced', 'max_depth': 27, 'n_estimators': 134}
+param_prod_RF = {"class_weight": "balanced", "max_depth": 19, "n_estimators": 171}
 param_surf_histgb = {'l2_regularization': 0.17592525267734538, 'learning_rate': 0.03542260908465626, 'max_iter': 241}
-param_sub_RF = {'class_weight': 'balanced', 'max_depth': 24, 'n_estimators': 180}
-param_over_RF = {'class_weight': 'balanced', 'max_depth': 24, 'n_estimators': 173}
-param_stacked_xgb = {'learning_rate': 0.1, 'n_estimators': 50}
-
-
-# COMMAND ----------
 
 dpe_RF = RandomForestClassifier(**param_dpe_RF)
 ges_RF = RandomForestClassifier(**param_ges_RF)
+prod_RF = RandomForestClassifier(**param_prod_RF)
 surf_histgb = HistGradientBoostingClassifier(**param_surf_histgb)
 
-
-# COMMAND ----------
-
-training_dpe_ges = (
-    dpe.select(
-        F.col('type'),
-        F.col('construction_date'),
-        F.col('heating_system'),
-        F.col('hot_water_system'),
-        F.col('heating_production'),
-        F.col('GES_emission'),
-        F.col('DPE_consumption')
-    )
-)
-training_surf = spark.sql("SELECT * FROM Model.training_surf")
-training_prod = spark.sql("SELECT * FROM Model.training_prod")
-training_dpe = training_dpe_ges.drop('GES_emission')
-training_ges = training_dpe_ges.drop('DPE_consumption')
-
-# COMMAND ----------
-
-def prepare_target_features(df, col_hot, col_not_hot, target):
-    X_hot = np.array(df.select(col_hot).collect())
-    encoder = OneHotEncoder(drop="first", sparse=False).fit(X_hot)
-    X_hot = encoder.transform(X_hot)
-    X_not_hot = np.array(df.select(col_not_hot).collect())
-    X = np.column_stack((X_not_hot, X_hot))
-    
-    y = df.select(target)
-    if not 0 in np.array(y.dropDuplicates().collect()):
-        y = y.withColumn(target, F.col(target) - 1)
-    y = np.array(y.collect()).ravel()
-    return X, y, encoder
-
-# COMMAND ----------
-
-# prefit estimators
-target = "heating_production"
-col_hot = ['occupation', 'department_number']
-col_not_hot = [col[0] for col in training_prod.dtypes if col[0] not in col_hot + [target]]
-
-training_prod_subclass = (
-    training_prod.filter(
-        F.col(target).isin([2, 3, 4, 5])
-    )
-    .withColumn(target, F.col(target) - 2)
-)
-
-training_prod_overclass = (
-    training_prod.filter(
-        F.col(target).isin([1, 6])
-    )
-    .withColumn(target, F.when(F.col(target) == 1, 0).otherwise(1))
-)
-X_sub, y_sub, _ = prepare_target_features(training_prod, col_hot, col_not_hot, target)
-RF_sub = RandomForestClassifier(**param_sub_RF).fit(X_sub, y_sub)
-X_over, y_over, _ = prepare_target_features(training_prod, col_hot, col_not_hot, target)
-RF_over = RandomForestClassifier(**param_over_RF).fit(X_over, y_over)
-
-estimators = [
-    ("rf1", RF_sub),
-    ("rf2", RF_over),
-]
-stack = StackingClassifier(estimators, XGBClassifier(**param_stacked_xgb), cv='prefit')
-
-# COMMAND ----------
-
-import matplotlib.pyplot as plt
-from sklearn.metrics import accuracy_score, r2_score, confusion_matrix, f1_score
-import seaborn as sn
-
-# COMMAND ----------
-
-trainings = [training_prod, training_surf, training_dpe, training_ges]
-targets = ['heating_production', 'surface', 'DPE_consumption', 'GES_emission']
-col_hots = [['occupation', 'department_number'],['occupation', 'department_number'], ['heating_production'], ['heating_production']]
-col_not_hots = [
-    [col[0] for col in training.dtypes if col[0] not in col_hot + [target]]
-    for training, col_hot, target in zip(trainings, col_hots, targets)
-]
-models = [stack, surf_histgb ,dpe_RF, ges_RF]
-f, axs = plt.subplots(1, 4, figsize=(20,5))
-encoders = {}
-
-for model, training, target, col_hot, col_not_hot, ax in zip (models, trainings, targets, col_hots, col_not_hots, axs.flatten()):
-    X, y, encoder = prepare_target_features(training, col_hot, col_not_hot, target)
-    model.fit(X, y)
-    y_pred = model.predict(X)
-    encoders[target] = encoder
-    matrix = confusion_matrix(y, y_pred)
-    sn.heatmap(
-        (matrix.T / np.sum(matrix, axis=1).T).T,
-        ax=ax,
-        annot=True,
-        fmt=".1%",
-    )
-    ax.set_ylabel("true")
-    ax.set_xlabel("pred")
-    ax.set_title(f'{target}\nscore : {round(f1_score(y, y_pred, average="micro"),4)}')
-
-
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC # pred_tremi
 
 # COMMAND ----------
 
@@ -315,10 +204,81 @@ training_tremi = (
         F.col('heating_production'),
     )
 )
+training_surf = training_tremi.filter(F.col('surface').isNotNull()).drop('id_owner','heating_production')
+training_prod = training_tremi.filter(F.col('heating_production').isNotNull()).drop('id_owner','surface')
 
 # COMMAND ----------
 
-from pyspark.sql.types import IntegerType
+training_dpe_ges = (
+    dpe.select(
+        F.col('type'),
+        F.col('construction_date'),
+        F.col('heating_system'),
+        F.col('hot_water_system'),
+        F.col('heating_production'),
+        F.col('GES_emission'),
+        F.col('DPE_consumption')
+    )
+)
+training_dpe = training_dpe_ges.drop('GES_emission')
+training_ges = training_dpe_ges.drop('DPE_consumption')
+
+# COMMAND ----------
+
+def prepare_target_features(df, col_hot, col_not_hot, target):
+    X_hot = np.array(df.select(col_hot).collect())
+    encoder = OneHotEncoder(drop="first", sparse=False).fit(X_hot)
+    X_hot = encoder.transform(X_hot)
+    X_not_hot = np.array(df.select(col_not_hot).collect())
+    X = np.column_stack((X_not_hot, X_hot))
+    
+    y = df.select(target)
+    if not 0 in np.array(y.dropDuplicates().collect()):
+        y = y.withColumn(target, F.col(target) - 1)
+    y = np.array(y.collect()).ravel()
+    return X, y, encoder
+
+# COMMAND ----------
+
+import matplotlib.pyplot as plt
+from sklearn.metrics import accuracy_score, r2_score, confusion_matrix, f1_score
+import seaborn as sn
+
+# COMMAND ----------
+
+trainings = [training_prod, training_surf, training_dpe, training_ges]
+targets = ['heating_production', 'surface', 'DPE_consumption', 'GES_emission']
+col_hots = [['occupation', 'department_number'],['occupation', 'department_number'], ['heating_production'], ['heating_production']]
+col_not_hots = [
+    [col[0] for col in training.dtypes if col[0] not in col_hot + [target]]
+    for training, col_hot, target in zip(trainings, col_hots, targets)
+]
+models = [prod_RF, surf_histgb ,dpe_RF, ges_RF]
+f, axs = plt.subplots(1, 4, figsize=(20,5))
+encoders = {}
+
+for model, training, target, col_hot, col_not_hot, ax in zip (models, trainings, targets, col_hots, col_not_hots, axs.flatten()):
+    X, y, encoder = prepare_target_features(training, col_hot, col_not_hot, target)
+    model.fit(X, y)
+    y_pred = model.predict(X)
+    encoders[target] = encoder
+    matrix = confusion_matrix(y, y_pred)
+    sn.heatmap(
+        (matrix.T / np.sum(matrix, axis=1).T).T,
+        ax=ax,
+        annot=True,
+        fmt=".1%",
+    )
+    ax.set_ylabel("true")
+    ax.set_xlabel("pred")
+    ax.set_title(f'{target}\nscore : {round(f1_score(y, y_pred, average="micro"),4)}')
+
+
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # pred_tremi
 
 # COMMAND ----------
 

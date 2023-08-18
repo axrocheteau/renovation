@@ -18,6 +18,7 @@ spark = SparkSession \
 
 # drop databases
 # spark.sql("DROP DATABASE IF EXISTS Datalake CASCADE")
+# spark.sql("DROP DATABASE IF EXISTS Intermediate CASCADE")
 # spark.sql("DROP DATABASE IF EXISTS Silver CASCADE")
 # spark.sql("DROP DATABASE IF EXISTS Gold CASCADE")
 # spark.sql("DROP DATABASE IF EXISTS Model CASCADE")

@@ -239,7 +239,7 @@ display(prediction)
 # COMMAND ----------
 
 # Replace <run-id1> with the run ID you identified in the previous step.
-run_id1 = "ccd2f957af5a4e399875a59839609c84"
+run_id1 = "c5cd522cdd7643d291e1ea6d0fda6f22"
 model_uri = "runs:/" + run_id1 + "/model"
 
 import mlflow.sklearn
@@ -261,12 +261,15 @@ predicted_df = (
                 'heating_production',
                 'DPE_consumption',
                 'GES_emission',
-                'humidity_0_1',
-                'wind_speed_0_1',
-                'temp_degree_0_1',
-                'humidity_1_2',
-                'wind_speed_1_2',
-                'temp_degree_1_2',
+                'humidity_0',
+                'wind_speed_0',
+                'temp_degree_0',
+                'humidity_1',
+                'wind_speed_1',
+                'temp_degree_1',
+                'humidity_2',
+                'wind_speed_2',
+                'temp_degree_2',
                 'population',
                 'n_development_licence',
                 'n_construction_licence',

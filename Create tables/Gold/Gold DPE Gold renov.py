@@ -22,8 +22,134 @@ spark = SparkSession \
 
 # load df
 dpe_2021 = spark.sql("SELECT * FROM Datalake.dpe_france_2021")
-predicted_renov = spark.sql("SELECT * FROM Model.predicted_renov")
+training_renov = spark.sql("SELECT * FROM Model.training_renov_no_diff")
+prediction_renov = spark.sql("SELECT * FROM Model.prediction_renov_no_diff")
 gold_municipality = spark.sql("SELECT * FROM Gold.Municipality")
+
+# COMMAND ----------
+
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from xgboost.sklearn import XGBClassifier
+from sklearn.ensemble import StackingClassifier
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import StandardScaler
+import numpy as np
+
+# COMMAND ----------
+
+parameters = [
+    {'name': 'estimator_RF', 'model_type': 'RandomForestClassifier' , 'parameters' : {'class_weight': 'balanced', 'max_depth': 10, 'n_estimators': 192}},
+    {'name': 'estimator_xgb', 'model_type': 'XGBClassifier' , 'parameters' : {'learning_rate': 0.01, 'n_estimators': 70}},
+]
+models = {
+    'RandomForestClassifier' : RandomForestClassifier,
+    'LogisticRegression' : LogisticRegression,
+    'XGBClassifier' : XGBClassifier,
+}
+
+parametrized_model = {model_dict['name']: models[model_dict['model_type']](**model_dict['parameters']) for model_dict in parameters}
+
+
+
+
+# COMMAND ----------
+
+target = "has_done_renov"
+col_not_hot = [col[0] for col in training_renov.dtypes if col[0] not in [target, 'id_dpe']]
+
+X = np.array(training_renov.select(col_not_hot).collect())
+
+y = training_renov.select(target)
+if not 0 in np.array(y.dropDuplicates().collect()):
+    y = y.withColumn(target, F.col(target) - 1)
+y = np.array(y.collect()).ravel()
+
+
+
+# COMMAND ----------
+
+import matplotlib.pyplot as plt
+from sklearn.metrics import accuracy_score, r2_score, confusion_matrix, f1_score
+import seaborn as sn
+
+# COMMAND ----------
+
+
+f, axs = plt.subplots(1,2, figsize=(10,5))
+
+for (model_name, model), ax in zip(parametrized_model.items(), axs.flatten()):
+    model.fit(X, y)
+    y_pred = model.predict(X)
+    matrix = confusion_matrix(y, y_pred)
+
+    sn.heatmap(
+        (matrix.T / np.sum(matrix, axis=1).T).T,
+        ax=ax,
+        annot=True,
+        fmt=".1%",
+    )
+    ax.set_ylabel("true")
+    ax.set_xlabel("pred")
+    ax.set_title(f'{model_name}\nscore : {round(f1_score(y, y_pred, average="micro"),4)}')
+
+
+
+# COMMAND ----------
+
+from pyspark.sql.types import StructType, StructField, IntegerType, StringType, Row
+
+# COMMAND ----------
+
+renov_array = (
+    np.array(
+        prediction_renov.drop(
+            F.col('has_to_renov')
+        ).collect()
+    )
+)
+
+# COMMAND ----------
+
+
+print(renov_array.shape)
+y_pred_xgb = parametrized_model['estimator_xgb'].predict(renov_array[:,1:].astype(float))
+y_pred_rf = parametrized_model['estimator_RF'].predict(renov_array[:,1:].astype(float))
+
+
+schema = StructType([ 
+    StructField("id_dpe", StringType(),True),
+    StructField("pred_renov_xgb",IntegerType(),True),
+    StructField("pred_renov_rf",IntegerType(),True),
+])
+
+pred_xgb_rf = spark.createDataFrame(
+    data=[Row(id_dpe, xgb, rf) for id_dpe, xgb, rf in zip(renov_array[:,0].tolist(), y_pred_xgb.tolist(), y_pred_rf.tolist())],
+    schema=schema
+)
+
+# COMMAND ----------
+
+pred_xgb_rf.select('pred_renov_xgb').groupBy('pred_renov_xgb').count().show()
+pred_xgb_rf.select('pred_renov_rf').groupBy('pred_renov_rf').count().show()
+
+# COMMAND ----------
+
+predicted_renov = (
+    prediction_renov.select(
+        F.col('id_dpe'),
+        F.col('surface'),
+        F.col('construction_date'),
+        F.col('heating_production'),
+        F.col('DPE_consumption'),
+        F.col('GES_emission')
+    )
+    .join(
+        pred_xgb_rf,
+        ['id_dpe'],
+        'inner'
+    )
+)
 
 # COMMAND ----------
 
@@ -42,7 +168,7 @@ def to_categorical(x):
 to_categorical_udf = udf(lambda x: to_categorical(x))
 
 def to_renov(x):
-    if x is None or x > 2:
+    if x is None or x > 1:
         return 0
     else:
         return 1
@@ -119,7 +245,8 @@ dpe = (
             F.col('heating_production'),
             F.col('DPE_consumption'),
             F.col('GES_emission'),
-            F.col('has_to_renov')
+            F.col('pred_renov_xgb'),
+            F.col('pred_renov_rf'),
         ),
         ['id_dpe'],
         'inner'
@@ -155,6 +282,55 @@ dpe = (
     )
 )
 
+
+# COMMAND ----------
+
+insights = (
+    dpe.withColumn(
+        'nb_renov',
+        F.col('renov_shell') +
+        F.col('renov_walls') +
+        F.col('renov_carpentry') +
+        F.col('renov_flooring') +
+        F.col('renov_ceiling')
+    )
+)
+
+xgb_score = (
+    insights.groupBy(
+        F.col('pred_renov_xgb').alias('pred_renov'),
+        F.col('nb_renov'),
+    ).count()
+)
+
+rf_score = (
+    insights.groupBy(
+        F.col('pred_renov_rf').alias('pred_renov'),
+        F.col('nb_renov'),
+    ).count()
+)
+
+
+# COMMAND ----------
+
+xgb = xgb_score.collect()
+rf = rf_score.collect()
+
+# COMMAND ----------
+
+for score, name in zip([xgb, rf], ['xgb', 'rf']):
+    final = 0
+    for s in score:
+        if s['pred_renov'] == 1 and s['nb_renov'] >= 2:
+            final += s['count'] * s['nb_renov']
+        elif s['pred_renov'] == 1 and s['nb_renov'] < 2:
+            final -= s['count'] * (s['nb_renov'] + 1)
+        elif s['pred_renov'] == 0 and s['nb_renov'] >= 2:
+            final -= s['count'] * s['nb_renov']
+        else:
+            final += s['count'] * (s['nb_renov'] + 1)
+    print(name, final)
+    
 
 # COMMAND ----------
 

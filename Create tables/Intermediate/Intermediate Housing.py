@@ -37,7 +37,7 @@ housing = (
         F.col('main_Q104').alias('hot_water_system'),
         F.col('main_Q32').alias('heating_production'),
         F.col('main_Q34').alias('heating_emission'),
-        F.col('main_').alias('surface'),
+        F.col('main_q41_c').alias('surface'),
         F.col('main_Q1_97').alias('has_done_renov'),
         F.col('main_Q43').alias('DPE_before'),
         F.col('main_Q52').alias('thermal_comfort'),
