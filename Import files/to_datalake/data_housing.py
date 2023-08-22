@@ -41,7 +41,10 @@ from pyspark.sql.types import StructType, StructField, IntegerType
 
 # COMMAND ----------
 
-token = '1faa436f-f786-3749-b8a1-32fe1e54f67e'
+try:
+    token = dbutils.widgets.get("token")
+except:
+    token = '1faa436f-f786-3749-b8a1-32fe1e54f67e'
 headers = {'Accept': 'application/xml', 'Authorization': f'Bearer {token}'}
 schema = StructType([
     StructField("houses", IntegerType(), False),

@@ -280,8 +280,6 @@ predicted_df = (
         )
     )
 )
-display(predicted_df)
-predicted_df.groupBy('has_to_renov').count().show()
 
 # COMMAND ----------
 

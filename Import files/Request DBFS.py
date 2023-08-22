@@ -5,9 +5,9 @@
 # COMMAND ----------
 
 # all db
-dbutils.fs.ls("/user/hive/warehouse/datalake.db")
+# dbutils.fs.ls("/user/hive/warehouse/datalake.db")
 # all files
-# dbutils.fs.ls("/FileStore/tables")
+dbutils.fs.ls("/FileStore/tables")
 
 
 # COMMAND ----------
