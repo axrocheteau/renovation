@@ -16,34 +16,6 @@ spark = SparkSession \
 
 # COMMAND ----------
 
-# drop databases
-# spark.sql("DROP DATABASE IF EXISTS Datalake CASCADE")
-# spark.sql("DROP DATABASE IF EXISTS Intermediate CASCADE")
-# spark.sql("DROP DATABASE IF EXISTS Silver CASCADE")
-# spark.sql("DROP DATABASE IF EXISTS Gold CASCADE")
-# spark.sql("DROP DATABASE IF EXISTS Model CASCADE")
-
-# Create Database store raw files
-spark.sql("CREATE DATABASE IF NOT EXISTS Datalake")
-
-# Create Database store modified files
-spark.sql("CREATE DATABASE IF NOT EXISTS Intermediate")
-
-# Create Database store final modifie files
-spark.sql("CREATE DATABASE IF NOT EXISTS Silver")
-
-# Create Database store final modifie files
-spark.sql("CREATE DATABASE IF NOT EXISTS Model")
-
-# Create Database store data for BI
-spark.sql("CREATE DATABASE IF NOT EXISTS Gold")
-
-# COMMAND ----------
-
-dbutils.fs.ls('/FileStore/tables/')
-
-# COMMAND ----------
-
 
 # create database
 # File location and type

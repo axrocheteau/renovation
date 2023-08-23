@@ -27,7 +27,11 @@ def correct(previous_line, lines, f):
     # handle previous line
     length = len(re.split(',', previous_line))
     while(length < 245):
-        previous_line = previous_line[:-1] + lines[i]
+        try:
+            previous_line = previous_line[:-1] + lines[i]
+        except:
+            f.write(previous_line + '\n')
+            return ''
         length = len(re.split(',', previous_line))
         i += 1
     f.write(previous_line + '\n')

@@ -44,7 +44,7 @@ from pyspark.sql.types import StructType, StructField, IntegerType
 try:
     token = dbutils.widgets.get("token")
 except:
-    token = '1faa436f-f786-3749-b8a1-32fe1e54f67e'
+    token = 'b62243bd-e5d8-30b2-a9c0-c2ee74a03940'
 headers = {'Accept': 'application/xml', 'Authorization': f'Bearer {token}'}
 schema = StructType([
     StructField("houses", IntegerType(), False),
@@ -82,11 +82,11 @@ df = (
         map_udf(F.col('Code_commune_INSEE')).alias('g')
     )
     .select(
-        ['Code_commune_INSEE'] + [f"g.{col}" for col in schema.names] 
+        ['Code_commune_INSEE'] + [f"g.{col}" for col in schema.names]
     )
 )
 print(df.count())
-
+display(df)
 
 # COMMAND ----------
 
