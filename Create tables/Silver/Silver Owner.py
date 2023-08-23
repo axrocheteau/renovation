@@ -20,14 +20,14 @@ spark = SparkSession \
 # COMMAND ----------
 
 # load df
-silver_owner = spark.sql("SELECT * FROM Silver.Owner")
-silver_housing = spark.sql("SELECT * FROM Silver.Housing")
+intermediate_owner = spark.sql("SELECT * FROM intermediate.Owner")
+intermediate_housing = spark.sql("SELECT * FROM intermediate.Housing")
 
 
 # COMMAND ----------
 
 owner = (
-    silver_owner.select(
+    intermediate_owner.select(
         F.col('id_owner'),
         F.col('gender'),
         F.col('age'),
@@ -41,7 +41,7 @@ owner = (
     .join(
         # have a house or an appartment
         (
-            silver_housing.select(
+            intermediate_housing.select(
                 F.col('id_owner'),
                 F.col('type')
             )
@@ -96,11 +96,11 @@ owner = (
     )
 )
 
-print(silver_owner.count(), owner.count())
+print(intermediate_owner.count(), owner.count())
 display(owner)
 
 # COMMAND ----------
 
 owner.write.mode('overwrite')\
         .format("parquet") \
-        .saveAsTable("Gold.Owner")
+        .saveAsTable("Silver.Owner")

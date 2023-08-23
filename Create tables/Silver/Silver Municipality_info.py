@@ -1,6 +1,6 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Municipality info
+# MAGIC # Silver Municipality info
 
 # COMMAND ----------
 
@@ -27,7 +27,7 @@ construction_licence_2023 = spark.sql("SELECT * FROM datalake.construction_licen
 destruction_licence = spark.sql("SELECT * FROM datalake.destruction_licence")
 development_licence = spark.sql("SELECT * FROM datalake.development_licence")
 code_commune = spark.sql("SELECT * FROM datalake.code_commune")
-municipality = spark.sql("SELECT * FROM Gold.Municipality")
+municipality = spark.sql("SELECT * FROM Silver.Municipality")
 
 # COMMAND ----------
 
@@ -196,4 +196,4 @@ display(municipality_info)
 
 municipality_info.write.mode('overwrite')\
         .format("parquet") \
-        .saveAsTable("Gold.Municipality_info")
+        .saveAsTable("Silver.Municipality_info")

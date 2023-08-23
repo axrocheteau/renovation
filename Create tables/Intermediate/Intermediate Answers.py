@@ -1,6 +1,6 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Create Answers
+# MAGIC # Intermediate Answers
 
 # COMMAND ----------
 
@@ -21,7 +21,7 @@ spark = SparkSession \
 
 # load df
 tremi = spark.sql("SELECT * FROM datalake.tremi")
-Dictionnary = spark.sql("SELECT * FROM Silver.Dictionary")
+Dictionnary = spark.sql("SELECT * FROM Intermediate.Dictionary")
 
 
 # COMMAND ----------
@@ -49,4 +49,4 @@ display(answer)
 # save as table
 answer.write.mode('overwrite')\
         .format("parquet") \
-        .saveAsTable("Silver.Answer")
+        .saveAsTable("Intermediate.Answer")

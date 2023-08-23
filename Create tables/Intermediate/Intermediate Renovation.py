@@ -43,4 +43,4 @@ display(renovation)
 # save as table
 renovation.write.mode('overwrite')\
         .format("parquet") \
-        .saveAsTable("Silver.Renovation")
+        .saveAsTable("Intermediate.Renovation")

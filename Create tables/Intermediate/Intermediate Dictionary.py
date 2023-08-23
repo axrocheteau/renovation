@@ -1,6 +1,6 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Create Dictionnary
+# MAGIC # Intermediate Dictionnary
 
 # COMMAND ----------
 
@@ -98,4 +98,4 @@ Dictionary = (
 # save as table
 Dictionary.write.mode('overwrite')\
         .format("parquet") \
-        .saveAsTable("Silver.Dictionary")
+        .saveAsTable("Intermediate.Dictionary")

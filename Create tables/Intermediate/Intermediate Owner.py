@@ -1,6 +1,6 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Create Owner
+# MAGIC # Intermediate Owner
 
 # COMMAND ----------
 
@@ -52,4 +52,4 @@ display(owner)
 # save as table
 owner.write.mode('overwrite')\
         .format("parquet") \
-        .saveAsTable("Silver.Owner")
+        .saveAsTable("Intermediate.Owner")

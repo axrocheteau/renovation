@@ -21,11 +21,11 @@ spark = SparkSession \
 # COMMAND ----------
 
 # load df
-dpe = spark.sql("SELECT * FROM Gold.dpe")
-housing = spark.sql("SELECT * FROM Gold.Housing")
-weather = spark.sql("SELECT * FROM Gold.Weather")
-municipality = spark.sql("SELECT * FROM Gold.Municipality")
-municipality_info = spark.sql("SELECT * FROM Gold.Municipality_info")
+dpe = spark.sql("SELECT * FROM Silver.dpe")
+housing = spark.sql("SELECT * FROM Silver.Housing")
+weather = spark.sql("SELECT * FROM Silver.Weather")
+municipality = spark.sql("SELECT * FROM Silver.Municipality")
+municipality_info = spark.sql("SELECT * FROM Silver.Municipality_info")
 
 
 # COMMAND ----------
@@ -212,8 +212,8 @@ prediction = (
         F.col('heating_system'),
         F.col('hot_water_system'),
         F.col('heating_production'),
-        F.col('DPE_consumption'),
-        F.col('GES_emission'),
+        F.col('DPE_consumption').cast('int'),
+        F.col('GES_emission').cast('int'),
         F.col('humidity_0'),
         F.col('wind_speed_0'),
         F.col('temp_degree_0'),
@@ -239,7 +239,7 @@ display(prediction)
 # COMMAND ----------
 
 # Replace <run-id1> with the run ID you identified in the previous step.
-run_id1 = "ccd2f957af5a4e399875a59839609c84"
+run_id1 = "c5cd522cdd7643d291e1ea6d0fda6f22"
 model_uri = "runs:/" + run_id1 + "/model"
 
 import mlflow.sklearn
@@ -280,14 +280,12 @@ predicted_df = (
         )
     )
 )
-display(predicted_df)
-predicted_df.groupBy('has_to_renov').count().show()
 
 # COMMAND ----------
 
 training.write.mode('overwrite')\
         .format("parquet") \
-        .saveAsTable("Model.training_renov")
+        .saveAsTable("Model.training_renov_no_diff")
 
 predicted_df.write.mode('overwrite')\
         .format("parquet") \

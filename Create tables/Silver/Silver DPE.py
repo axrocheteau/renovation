@@ -1,6 +1,6 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # DPE
+# MAGIC # Silver DPE
 
 # COMMAND ----------
 
@@ -21,7 +21,7 @@ spark = SparkSession \
 
 # load df
 dpe_2021 = spark.sql("SELECT * FROM Datalake.dpe_france_2021")
-municipality = spark.sql("SELECT * FROM Gold.Municipality")
+municipality = spark.sql("SELECT * FROM Silver.Municipality")
 
 # COMMAND ----------
 
@@ -205,4 +205,4 @@ display(dpe)
 
 dpe.write.mode('overwrite')\
         .format("parquet") \
-        .saveAsTable("Gold.DPE")
+        .saveAsTable("Silver.DPE")

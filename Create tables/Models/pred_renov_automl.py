@@ -2,8 +2,8 @@
 # MAGIC %md
 # MAGIC # LightGBM Classifier training
 # MAGIC - This is an auto-generated notebook.
-# MAGIC - To reproduce these results, attach this notebook to a cluster with runtime version **13.2.x-cpu-ml-scala2.12**, and rerun it.
-# MAGIC - Compare trials in the [MLflow experiment](#mlflow/experiments/1909015879129418).
+# MAGIC - To reproduce these results, attach this notebook to a cluster with runtime version **13.0.x-cpu-ml-scala2.12**, and rerun it.
+# MAGIC - Compare trials in the [MLflow experiment](#mlflow/experiments/1393426856100721).
 # MAGIC - Clone this notebook into your project folder by selecting **File > Clone** in the notebook toolbar.
 
 # COMMAND ----------
@@ -32,7 +32,7 @@ os.makedirs(input_temp_dir)
 
 
 # Download the artifact and read it into a pandas DataFrame
-input_data_path = mlflow.artifacts.download_artifacts(run_id="b92570082b8d41acab3b257a83a7f8a9", artifact_path="data", dst_path=input_temp_dir)
+input_data_path = mlflow.artifacts.download_artifacts(run_id="4ac01cd714e0411d9bc644c6cbd99193", artifact_path="data", dst_path=input_temp_dir)
 
 df_loaded = pd.read_parquet(os.path.join(input_data_path, "training_data"))
 # Delete the temp data
@@ -51,7 +51,7 @@ df_loaded.head(5)
 # COMMAND ----------
 
 from databricks.automl_runtime.sklearn.column_selector import ColumnSelector
-supported_cols = ["wind_speed_1", "department_number", "wind_speed_0", "heating_system", "type", "humidity_1", "humidity_0", "wind_speed_2", "n_new_buildings", "hot_water_system", "temp_degree_0", "humidity_2", "temp_degree_1", "n_development_licence", "temp_degree_2", "n_destruction_licence", "population", "n_construction_licence", "construction_date"]
+supported_cols = ["wind_speed_1", "department_number", "heating_system", "wind_speed_0", "GES_emission", "type", "humidity_1", "humidity_0", "wind_speed_2", "n_new_buildings", "hot_water_system", "DPE_consumption", "temp_degree_0", "humidity_2", "surface", "temp_degree_1", "n_development_licence", "temp_degree_2", "n_destruction_licence", "heating_production", "population", "n_construction_licence", "construction_date"]
 col_selector = ColumnSelector(supported_cols)
 
 # COMMAND ----------
@@ -99,7 +99,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import FunctionTransformer, StandardScaler
 
 num_imputers = []
-num_imputers.append(("impute_mean", SimpleImputer(), ["construction_date", "department_number", "heating_system", "hot_water_system", "humidity_0", "humidity_1", "humidity_2", "n_construction_licence", "n_destruction_licence", "n_development_licence", "n_new_buildings", "population", "temp_degree_0", "temp_degree_1", "temp_degree_2", "type", "wind_speed_0", "wind_speed_1", "wind_speed_2"]))
+num_imputers.append(("impute_mean", SimpleImputer(), ["DPE_consumption", "GES_emission", "construction_date", "department_number", "heating_production", "heating_system", "hot_water_system", "humidity_0", "humidity_1", "humidity_2", "n_construction_licence", "n_destruction_licence", "n_development_licence", "n_new_buildings", "population", "surface", "temp_degree_0", "temp_degree_1", "temp_degree_2", "type", "wind_speed_0", "wind_speed_1", "wind_speed_2"]))
 
 numerical_pipeline = Pipeline(steps=[
     ("converter", FunctionTransformer(lambda df: df.apply(pd.to_numeric, errors='coerce'))),
@@ -107,7 +107,7 @@ numerical_pipeline = Pipeline(steps=[
     ("standardizer", StandardScaler()),
 ])
 
-numerical_transformers = [("numerical", numerical_pipeline, ["wind_speed_1", "department_number", "wind_speed_0", "heating_system", "type", "humidity_1", "humidity_0", "wind_speed_2", "n_new_buildings", "hot_water_system", "temp_degree_0", "humidity_2", "temp_degree_1", "n_development_licence", "temp_degree_2", "n_destruction_licence", "population", "n_construction_licence", "construction_date"])]
+numerical_transformers = [("numerical", numerical_pipeline, ["wind_speed_1", "department_number", "heating_system", "wind_speed_0", "GES_emission", "type", "humidity_1", "humidity_0", "wind_speed_2", "n_new_buildings", "hot_water_system", "DPE_consumption", "temp_degree_0", "humidity_2", "surface", "temp_degree_1", "n_development_licence", "temp_degree_2", "n_destruction_licence", "heating_production", "population", "n_construction_licence", "construction_date"])]
 
 # COMMAND ----------
 
@@ -135,7 +135,7 @@ one_hot_pipeline = Pipeline(steps=[
     ("one_hot_encoder", OneHotEncoder(handle_unknown="indicator")),
 ])
 
-categorical_one_hot_transformers = [("onehot", one_hot_pipeline, ["construction_date"])]
+categorical_one_hot_transformers = [("onehot", one_hot_pipeline, ["DPE_consumption", "GES_emission", "construction_date", "heating_production", "surface"])]
 
 # COMMAND ----------
 
@@ -154,25 +154,25 @@ preprocessor = ColumnTransformer(transformers, remainder="passthrough", sparse_t
 # MAGIC - Validation (20% of the dataset used to tune the hyperparameters of the model)
 # MAGIC - Test (20% of the dataset used to report the true performance of the model on an unseen dataset)
 # MAGIC
-# MAGIC `_automl_split_col_0000` contains the information of which set a given row belongs to.
+# MAGIC `_automl_split_col_8155` contains the information of which set a given row belongs to.
 # MAGIC We use this column to split the dataset into the above 3 sets. 
 # MAGIC The column should not be used for training so it is dropped after split is done.
 
 # COMMAND ----------
 
-# AutoML completed train - validation - test split internally and used _automl_split_col_0000 to specify the set
-split_train_df = df_loaded.loc[df_loaded._automl_split_col_0000 == "train"]
-split_val_df = df_loaded.loc[df_loaded._automl_split_col_0000 == "val"]
-split_test_df = df_loaded.loc[df_loaded._automl_split_col_0000 == "test"]
+# AutoML completed train - validation - test split internally and used _automl_split_col_8155 to specify the set
+split_train_df = df_loaded.loc[df_loaded._automl_split_col_8155 == "train"]
+split_val_df = df_loaded.loc[df_loaded._automl_split_col_8155 == "val"]
+split_test_df = df_loaded.loc[df_loaded._automl_split_col_8155 == "test"]
 
-# Separate target column from features and drop _automl_split_col_0000
-X_train = split_train_df.drop([target_col, "_automl_split_col_0000"], axis=1)
+# Separate target column from features and drop _automl_split_col_8155
+X_train = split_train_df.drop([target_col, "_automl_split_col_8155"], axis=1)
 y_train = split_train_df[target_col]
 
-X_val = split_val_df.drop([target_col, "_automl_split_col_0000"], axis=1)
+X_val = split_val_df.drop([target_col, "_automl_split_col_8155"], axis=1)
 y_val = split_val_df[target_col]
 
-X_test = split_test_df.drop([target_col, "_automl_split_col_0000"], axis=1)
+X_test = split_test_df.drop([target_col, "_automl_split_col_8155"], axis=1)
 y_test = split_test_df[target_col]
 
 # COMMAND ----------
@@ -180,7 +180,7 @@ y_test = split_test_df[target_col]
 # MAGIC %md
 # MAGIC ## Train classification model
 # MAGIC - Log relevant metrics to MLflow to track runs
-# MAGIC - All the runs are logged under [this MLflow experiment](#mlflow/experiments/1909015879129418)
+# MAGIC - All the runs are logged under [this MLflow experiment](#mlflow/experiments/1393426856100721)
 # MAGIC - Change the model parameters and re-run the training cell to log a different trial to the MLflow experiment
 # MAGIC - To view the full list of tunable hyperparameters, check the output of the cell below
 
@@ -222,7 +222,7 @@ pipeline_val.fit(X_train, y_train)
 X_val_processed = pipeline_val.transform(X_val)
 
 def objective(params):
-  with mlflow.start_run(experiment_id="1909015879129418") as mlflow_run:
+  with mlflow.start_run(experiment_id="1393426856100721") as mlflow_run:
     lgbmc_classifier = LGBMClassifier(**params)
 
     model = Pipeline([
@@ -273,7 +273,7 @@ def objective(params):
     )
     lgbmc_test_metrics = test_eval_result.metrics
 
-    loss = -lgbmc_val_metrics["val_accuracy_score"]
+    loss = lgbmc_val_metrics["val_f1_score"]
 
     # Truncate metric key names so they can be displayed together
     lgbmc_val_metrics = {k.replace("val_", ""): v for k, v in lgbmc_val_metrics.items()}
@@ -312,18 +312,18 @@ def objective(params):
 # COMMAND ----------
 
 space = {
-  "colsample_bytree": 0.6743290496814558,
-  "lambda_l1": 0.5328515366727631,
-  "lambda_l2": 13.937048286164092,
-  "learning_rate": 0.3016303576788684,
-  "max_bin": 303,
-  "max_depth": 5,
-  "min_child_samples": 25,
-  "n_estimators": 601,
-  "num_leaves": 500,
-  "path_smooth": 39.01738364732478,
-  "subsample": 0.7996312772570932,
-  "random_state": 502062366,
+  "colsample_bytree": 0.46238671840939966,
+  "lambda_l1": 527.3553329021519,
+  "lambda_l2": 51.02470487507289,
+  "learning_rate": 0.6660996028542977,
+  "max_bin": 39,
+  "max_depth": 6,
+  "min_child_samples": 96,
+  "n_estimators": 254,
+  "num_leaves": 23,
+  "path_smooth": 90.47645922010503,
+  "subsample": 0.7940010712056597,
+  "random_state": 815171646,
 }
 
 # COMMAND ----------
@@ -366,58 +366,6 @@ model
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Patch pandas version in logged model
-# MAGIC
-# MAGIC Ensures that model serving uses the same version of pandas that was used to train the model.
-
-# COMMAND ----------
-
-import mlflow
-import os
-import shutil
-import tempfile
-import yaml
-
-run_id = mlflow_run.info.run_id
-
-# Set up a local dir for downloading the artifacts.
-tmp_dir = str(tempfile.TemporaryDirectory())
-os.makedirs(tmp_dir)
-
-client = mlflow.tracking.MlflowClient()
-
-# Fix conda.yaml
-conda_file_path = mlflow.artifacts.download_artifacts(artifact_uri=f"runs:/{run_id}/model/conda.yaml", dst_path=tmp_dir)
-with open(conda_file_path) as f:
-  conda_libs = yaml.load(f, Loader=yaml.FullLoader)
-pandas_lib_exists = any([lib.startswith("pandas==") for lib in conda_libs["dependencies"][-1]["pip"]])
-if not pandas_lib_exists:
-  print("Adding pandas dependency to conda.yaml")
-  conda_libs["dependencies"][-1]["pip"].append(f"pandas=={pd.__version__}")
-
-  with open(f"{tmp_dir}/conda.yaml", "w") as f:
-    f.write(yaml.dump(conda_libs))
-  client.log_artifact(run_id=run_id, local_path=conda_file_path, artifact_path="model")
-
-# Fix requirements.txt
-venv_file_path = mlflow.artifacts.download_artifacts(artifact_uri=f"runs:/{run_id}/model/requirements.txt", dst_path=tmp_dir)
-with open(venv_file_path) as f:
-  venv_libs = f.readlines()
-venv_libs = [lib.strip() for lib in venv_libs]
-pandas_lib_exists = any([lib.startswith("pandas==") for lib in venv_libs])
-if not pandas_lib_exists:
-  print("Adding pandas dependency to requirements.txt")
-  venv_libs.append(f"pandas=={pd.__version__}")
-
-  with open(f"{tmp_dir}/requirements.txt", "w") as f:
-    f.write("\n".join(venv_libs))
-  client.log_artifact(run_id=run_id, local_path=venv_file_path, artifact_path="model")
-
-shutil.rmtree(tmp_dir)
-
-# COMMAND ----------
-
-# MAGIC %md
 # MAGIC ## Feature importance
 # MAGIC
 # MAGIC SHAP is a game-theoretic approach to explain machine learning models, providing a summary plot
@@ -437,7 +385,7 @@ shutil.rmtree(tmp_dir)
 # COMMAND ----------
 
 # Set this flag to True and re-run the notebook to see the SHAP plots
-shap_enabled = False
+shap_enabled = True
 
 # COMMAND ----------
 
@@ -446,10 +394,10 @@ if shap_enabled:
     mlflow.sklearn.autolog(disable=True)
     from shap import KernelExplainer, summary_plot
     # Sample background data for SHAP Explainer. Increase the sample size to reduce variance.
-    train_sample = X_train.sample(n=min(100, X_train.shape[0]), random_state=502062366)
+    train_sample = X_train.sample(n=min(100, X_train.shape[0]), random_state=815171646)
 
     # Sample some rows from the validation set to explain. Increase the sample size for more thorough results.
-    example = X_val.sample(n=min(100, X_val.shape[0]), random_state=502062366)
+    example = X_val.sample(n=min(100, X_val.shape[0]), random_state=815171646)
 
     # Use Kernel SHAP to explain feature importance on the sampled rows from the validation set.
     predict = lambda x: model.predict(pd.DataFrame(x, columns=X_train.columns))
@@ -498,4 +446,56 @@ print(f"runs:/{ mlflow_run.info.run_id }/model")
 
 # COMMAND ----------
 
-print( run_id)
+# MAGIC %md
+# MAGIC ## Confusion matrix, ROC and Precision-Recall curves for validation data
+# MAGIC
+# MAGIC We show the confusion matrix, ROC and Precision-Recall curves of the model on the validation data.
+# MAGIC
+# MAGIC For the plots evaluated on the training and the test data, check the artifacts on the MLflow run page.
+
+# COMMAND ----------
+
+# Click the link to see the MLflow run page
+displayHTML(f"<a href=#mlflow/experiments/1393426856100721/runs/{ mlflow_run.info.run_id }/artifactPath/model> Link to model run page </a>")
+
+# COMMAND ----------
+
+import uuid
+from IPython.display import Image
+
+# Create temp directory to download MLflow model artifact
+eval_temp_dir = os.path.join(os.environ["SPARK_LOCAL_DIRS"], "tmp", str(uuid.uuid4())[:8])
+os.makedirs(eval_temp_dir, exist_ok=True)
+
+# Download the artifact
+eval_path = mlflow.artifacts.download_artifacts(run_id=mlflow_run.info.run_id, dst_path=eval_temp_dir)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Confusion matrix for validation dataset
+
+# COMMAND ----------
+
+eval_confusion_matrix_path = os.path.join(eval_path, "confusion_matrix.png")
+display(Image(filename=eval_confusion_matrix_path))
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### ROC curve for validation dataset
+
+# COMMAND ----------
+
+eval_roc_curve_path = os.path.join(eval_path, "roc_curve_plot.png")
+display(Image(filename=eval_roc_curve_path))
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Precision-Recall curve for validation dataset
+
+# COMMAND ----------
+
+eval_pr_curve_path = os.path.join(eval_path, "precision_recall_curve_plot.png")
+display(Image(filename=eval_pr_curve_path))

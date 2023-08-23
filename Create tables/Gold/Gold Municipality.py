@@ -1,6 +1,6 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Municipality
+# MAGIC # Gold Municipality
 
 # COMMAND ----------
 
@@ -20,14 +20,13 @@ spark = SparkSession \
 # COMMAND ----------
 
 # load df
-silver_municipality = spark.sql("SELECT * FROM Silver.Municipality")
-department = spark.sql("SELECT * FROM BI.Department")
+intermediate_municipality = spark.sql("SELECT * FROM Intermediate.Municipality")
 housings = spark.sql("SELECT * FROM Datalake.housings")
 
 # COMMAND ----------
 
 municipality = (
-    silver_municipality.select(
+    intermediate_municipality.select(
         F.col('department_number'),
         F.col('department_name'),
         F.col('new_region_name'),
@@ -65,11 +64,10 @@ municipality = (
 
 
 print(municipality.count())
-municipality.agg({'id_municipality':'max'}).show()
 display(municipality)
 
 # COMMAND ----------
 
 municipality.write.mode('overwrite')\
         .format("parquet") \
-        .saveAsTable("BI.Municipality")
+        .saveAsTable("Gold.Municipality")

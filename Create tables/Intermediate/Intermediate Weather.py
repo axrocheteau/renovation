@@ -1,6 +1,6 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Create Weather
+# MAGIC # Intermediate Weather
 
 # COMMAND ----------
 
@@ -35,7 +35,7 @@ weather = (
         F.col("Température (°C)").alias('temp_degree'),
         F.col("Altitude").alias('altitude'),
         F.col("department (code)").alias('department_number'),
-        F.col("mois_de_l_annee").alias('month'),
+        F.month("Date").alias('month'),
         F.year("Date").alias('year')
     )
     .groupBy('month', 'year', 'department_number').avg()
@@ -64,7 +64,7 @@ display(weather)
 # COMMAND ----------
 
 neigh = spark.sql("SELECT * FROM datalake.neighbouring_dep") # get neighbouring department
-unpivotExpr = "stack(8, Voisin_1, Voisin_2, Voisin_3, Voisin_4, Voisin_5, Voisin_6, Voisin_7, Voisin_8) AS (neigh)"
+unpivotExpr = "stack(8, Voisin_1, Voisin_2, Voisin_3, Voisin_4, Voisin_5, Voisin_6, Voisin_7, Voisin_8, Voisin_9, Voisin_10) AS (neigh)"
 neigh = neigh.select("Departement", F.expr(unpivotExpr)).where("neigh IS NOT NULL")
 
 # get all departments that are not present in weather dataset
@@ -110,5 +110,5 @@ display(full_weather.orderBy("year","month","department_number"))
 # save as table
 full_weather.write.mode('overwrite')\
         .format("parquet") \
-        .saveAsTable("Silver.Weather")
+        .saveAsTable("Intermediate.Weather")
 
