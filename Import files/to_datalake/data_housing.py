@@ -18,6 +18,7 @@ spark = SparkSession \
 # COMMAND ----------
 
 code_commune = spark.sql("SELECT * FROM datalake.code_commune")
+
 municipalities = (
     code_commune.select(
         F.col('Code_commune_INSEE')
@@ -85,8 +86,6 @@ df = (
         ['Code_commune_INSEE'] + [f"g.{col}" for col in schema.names]
     )
 )
-print(df.count())
-display(df)
 
 # COMMAND ----------
 
