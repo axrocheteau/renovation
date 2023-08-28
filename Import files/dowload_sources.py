@@ -28,7 +28,7 @@ link_csv_array = [
     
 ]
 link_zip_array = [
-    {'url' : 'https://www.insee.fr/fr/statistiques/fichier/4265429/ensemble.zip', 'extract': ['Departements.csv', 'Communes.csv'], "name": ['pop_commune_2016.csv', 'pop_dep_2016.csv']},
+    {'url' : 'https://www.insee.fr/fr/statistiques/fichier/4265429/ensemble.zip', 'extract': ['Departements.csv', 'Communes.csv'], "name": ['pop_dep_2016.csv', 'pop_commune_2016.csv']},
     {'url' : 'https://www.insee.fr/fr/statistiques/fichier/6683035/ensemble.zip', 'extract': ['donnees_communes.csv'], "name": ['pop_commune_2020.csv']},
     {'url' : 'https://www.data.gouv.fr/fr/datasets/r/67dd4ee1-0d73-4676-a90f-854fe9012f5d', 'extract': ['PC_DP_creant_logements_2013_2016.csv'], "name": ['construction_licence_2016.csv']},
     {'url' : 'https://www.data.gouv.fr/fr/datasets/r/1fa467ef-5e3a-456f-b961-be9032cfa3df', 'extract': ['PC_DP_creant_logements_2017_2023.csv'], "name": ['construction_licence_2023.csv']},

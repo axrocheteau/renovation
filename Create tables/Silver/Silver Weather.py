@@ -27,7 +27,8 @@ display(df)
 # COMMAND ----------
 
 neigh = spark.sql("SELECT * FROM datalake.neighbouring_dep") # get neighbouring department
-unpivotExpr = "stack(8, Voisin_1, Voisin_2, Voisin_3, Voisin_4, Voisin_5, Voisin_6, Voisin_7, Voisin_8, Voisin_9, Voisin_10) AS (neigh)"
+neigh = neigh.select(*(F.col(c).cast("int").alias(c) for c in neigh.columns))
+unpivotExpr = "stack(10, Voisin_1, Voisin_2, Voisin_3, Voisin_4, Voisin_5, Voisin_6, Voisin_7, Voisin_8, Voisin_9, Voisin_10) AS (neigh)"
 neigh = neigh.select("Departement", F.expr(unpivotExpr)).where("neigh IS NOT NULL")
 
 weather = (

@@ -62,17 +62,18 @@ for file in info_array:
     if 'dpe' in name:
         df = df.dropDuplicates()
     if name == 'code_commune':
-        df.withColumnRenamed('#Code_commune_INSEE', 'Code_commune_INSEE')
+        df = df.withColumnRenamed('#Code_commune_INSEE', 'Code_commune_INSEE')
     df.write.mode("overwrite")\
         .format("parquet") \
         .saveAsTable(f"datalake.{name}")
 
 # COMMAND ----------
 
+
 # # to recreate only one specific table
-# file_location = "/FileStore/tables/logements.csv"
+# file_location = "/FileStore/tables/pop_dep_2016.csv"
 # file_type = "csv"
-# name = "housings"
+# name = "pop_department_2016"
 
 # # CSV options
 # infer_schema = "true"
@@ -85,9 +86,13 @@ for file in info_array:
 #     .option("header", first_row_is_header) \
 #     .option("sep", delimiter) \
 #     .load(file_location)
-# if name == "weather":
-#     new_column_name_list= [name.replace(',','') for name in df.columns]
-#     df = df.toDF(*new_column_name_list)
+# # if name == "weather":
+# #     new_column_name_list= [name.replace(',','') for name in df.columns]
+# #     df = df.toDF(*new_column_name_list)
+# # if 'dpe' in name:
+# #     df = df.dropDuplicates()
+# # if name == 'code_commune':
+# #     df = df.withColumnRenamed('#Code_commune_INSEE', 'Code_commune_INSEE')
 # df.write.mode('overwrite')\
 #     .format("parquet") \
 #     .saveAsTable(f"Datalake.{name}")

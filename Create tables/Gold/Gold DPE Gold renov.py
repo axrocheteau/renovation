@@ -42,7 +42,7 @@ def to_categorical(x):
 to_categorical_udf = udf(lambda x: to_categorical(x))
 
 def to_renov(x):
-    if x is None or x > 1:
+    if x is None or x < 2:
         return 0
     else:
         return 1
@@ -63,15 +63,15 @@ def to_dictionary(dictionary, x):
 dpe_ges_dict = {0:'A', 1:'B', 2:'C', 3:'D', 4:'E', 5:'F', 6:'G'}
 heating_prod_dict = {1:'Gaz', 2:'fioul, GPL, propane, butane', 3:' bois, charbon', 4:'Autres', 5:'PAC', 6:'electricité'}
 quality_dict = {1 : 'insuffisante', 2 : 'moyenne', 3 : 'bonne', 4 : 'très bonne'}
-surface_dict = {1 : '<70 m²', 2:'entre 70 et 115 m²', 3:'>115 m²'}
+surface_dict = {1 : '<70 m²', 2:'70-115 m²', 3:'>115 m²'}
 construction_date_dict = {
-    1 : '1948 ou avant',
-    2 : 'Entre 1949 et 1974',
-    3 : 'Entre 1975 et 1981',
-    4 : 'Entre 1982 et 1989',
-    5 : 'Entre 1990 et 2000',
-    6 : 'Entre 2001 et 2011',
-    7 : '2012 ou après',
+    1 : '<1948',
+    2 : '1949-1974',
+    3 : '1975-1981',
+    4 : '1982-1989',
+    5 : '1990-2000',
+    6 : '2001-2011',
+    7 : '>2012',
 }
 
 def make_expr(column_name, dictionary):
